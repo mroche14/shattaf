@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Droplets, Menu, X } from 'lucide-react';
+import { SITE } from '../siteConfig';
 
 const Header: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -16,19 +17,23 @@ const Header: React.FC = () => {
             <span className="font-display font-bold text-2xl tracking-tighter uppercase">
               OASIS <span className="cyan-gradient-text">SHATTAF</span>
             </span>
-            <span className="text-[8px] font-medium text-gray-400 tracking-widest uppercase">Douchette Hygiénique</span>
+            <span className="text-[11px] font-medium text-gray-300 tracking-widest uppercase">{SITE.brand.tagline}</span>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-10 text-[10px] font-black tracking-[0.25em] text-gray-400">
-          <a href="#philosophy" className="hover:text-white transition-all uppercase">L'Hygiène</a>
+        <nav className="hidden md:flex items-center gap-10 text-[11px] font-black tracking-[0.18em] text-gray-300">
+          <a href="#philosophy" className="hover:text-white transition-all uppercase">Pourquoi l'eau</a>
           <a href="#models" className="hover:text-white transition-all uppercase">La Gamme</a>
+          <a href="#business" className="hover:text-white transition-all uppercase">Pro</a>
           <a href="#booking" className="hover:text-white transition-all uppercase">Installation</a>
           <button 
-            onClick={() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('booking:setMode', { detail: { isPro: false } }));
+              document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+            }}
             className="px-8 py-3 rounded-xl btn-primary text-white font-black hover:scale-105 transition-all shadow-xl uppercase"
           >
-            Commander
+            Réserver
           </button>
         </nav>
 
@@ -39,8 +44,9 @@ const Header: React.FC = () => {
 
       {isOpen && (
         <div className="md:hidden glass absolute top-full left-0 right-0 p-8 flex flex-col gap-6 text-center animate-in slide-in-from-top duration-300">
-          <a href="#philosophy" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Hygiène & Bien-être</a>
+          <a href="#philosophy" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Pourquoi l'eau</a>
           <a href="#models" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Modèles</a>
+          <a href="#business" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Professionnels</a>
           <a href="#booking" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Réserver</a>
         </div>
       )}

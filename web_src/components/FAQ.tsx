@@ -10,7 +10,7 @@ const FAQ: React.FC = () => {
     <section id="faq" className="py-24 bg-[#050a14]">
       <div className="container mx-auto px-6 max-w-4xl">
         <div className="text-center mb-16 space-y-4">
-          <h2 className="text-xs font-black text-cyan-400 tracking-[0.4em] uppercase">Intelligence</h2>
+          <h2 className="text-xs font-black text-cyan-300 tracking-[0.22em] uppercase">FAQ</h2>
           <h3 className="text-4xl md:text-5xl font-display font-bold text-white">Questions Fréquentes.</h3>
         </div>
 

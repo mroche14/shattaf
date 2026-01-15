@@ -9,14 +9,14 @@ const HygieneDuel: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
           <h2 className="text-cyan-400 text-xs font-black tracking-[0.4em] uppercase">Le Match de la Vérité</h2>
           <h3 className="text-4xl md:text-6xl font-display font-bold">L'Analyse du <span className="cyan-gradient-text">Nettoyage.</span></h3>
-          <p className="text-gray-400 font-light">Un schéma simple pour comprendre pourquoi le reste du monde (Dubaï, Japon) a déjà fait le choix de l'eau.</p>
+          <p className="text-gray-400 font-light">Un schéma simple pour comprendre pourquoi l'hygiène à l'eau est devenue un standard dans de nombreux pays.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12 items-stretch">
           {/* L'Ancien Monde */}
           <div className="glass p-10 rounded-[50px] border-red-500/10 relative group">
-            <div className="absolute -top-4 -left-4 px-4 py-2 bg-red-500/20 text-red-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-500/20">
-              Méthode Arcaïque
+            <div className="absolute -top-4 -left-4 px-4 py-2 bg-red-500/20 text-red-300 rounded-full text-[11px] font-black uppercase tracking-[0.18em] border border-red-500/20">
+              Papier seul
             </div>
             
             <div className="space-y-12">
@@ -26,7 +26,7 @@ const HygieneDuel: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-2xl font-display font-bold">Le Papier Seul</h4>
-                  <p className="text-gray-500 text-sm">On étale, on frotte, on irrite.</p>
+                  <p className="text-gray-500 text-sm">On essuie. Souvent, on doit repasser.</p>
                 </div>
               </div>
 
@@ -34,8 +34,8 @@ const HygieneDuel: React.FC = () => {
                 <div className="flex items-center gap-6 pl-14 relative">
                   <div className="absolute left-6 w-4 h-4 rounded-full border-4 border-red-500/40 bg-[#020617]"></div>
                   <div className="space-y-1">
-                    <p className="text-white font-bold">Étape 1 : Friction excessive</p>
-                    <p className="text-xs text-gray-500">Risque d'irritations et d'hémorroïdes.</p>
+                    <p className="text-white font-bold">Étape 1 : Friction répétée</p>
+                    <p className="text-xs text-gray-500">Peut irriter les peaux sensibles.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 pl-14 relative">
@@ -48,15 +48,15 @@ const HygieneDuel: React.FC = () => {
                   <div className="absolute left-6 w-4 h-4 rounded-full border-4 border-red-500/40 bg-[#020617]"></div>
                   <div className="flex items-center gap-3">
                     <ShowerHead className="text-red-400" />
-                    <p className="text-white font-bold">Verdict : Douche nécessaire</p>
+                    <p className="text-white font-bold">Verdict : sensation “pas net”</p>
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 border-t border-white/5 flex items-center justify-between">
                 <div className="text-center flex-1">
-                  <p className="text-3xl font-black text-red-400">~50</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-black">Feuilles / Session</p>
+                  <p className="text-3xl font-black text-red-400">14–21</p>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-[0.18em] font-black">Feuilles (selon habitudes)</p>
                 </div>
                 <XCircle className="text-red-500/40 w-12 h-12" />
               </div>
@@ -65,7 +65,7 @@ const HygieneDuel: React.FC = () => {
 
           {/* Le Monde Oasis */}
           <div className="glass p-10 rounded-[50px] border-cyan-500/20 relative gold-glow">
-             <div className="absolute -top-4 -right-4 px-4 py-2 gold-bg text-black rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
+             <div className="absolute -top-4 -right-4 px-4 py-2 gold-bg text-black rounded-full text-[11px] font-black uppercase tracking-[0.18em] shadow-xl">
               Standard Oasis Shattaf
             </div>
 
@@ -85,7 +85,7 @@ const HygieneDuel: React.FC = () => {
                   <div className="absolute left-6 w-4 h-4 rounded-full border-4 border-cyan-500/40 bg-[#020617]"></div>
                   <div className="space-y-1">
                     <p className="text-white font-bold">Étape 1 : Jet de précision</p>
-                    <p className="text-xs text-gray-500">L'eau élimine 100% des impuretés sans contact.</p>
+                    <p className="text-xs text-gray-500">L'eau rince en douceur, sans friction.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 pl-14 relative">
@@ -98,15 +98,15 @@ const HygieneDuel: React.FC = () => {
                   <div className="absolute left-6 w-4 h-4 rounded-full border-4 border-cyan-500/40 bg-[#020617]"></div>
                   <div className="flex items-center gap-3">
                     <TrendingDown className="text-cyan-400" />
-                    <p className="text-white font-bold">Séchage Rapide (2 feuilles)</p>
+                    <p className="text-white font-bold">Séchage rapide (2–4 feuilles)</p>
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 border-t border-white/5 flex items-center justify-between">
                 <div className="text-center flex-1">
-                  <p className="text-3xl font-black text-cyan-400">2-3</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-black">Feuilles / Session</p>
+                  <p className="text-3xl font-black text-cyan-400">2–4</p>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-[0.18em] font-black">Feuilles (séchage)</p>
                 </div>
                 <CheckCircle2 className="text-cyan-400 w-12 h-12" />
               </div>

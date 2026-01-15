@@ -38,7 +38,7 @@ const ChatConsultant: React.FC = () => {
           <div className="p-6 btn-primary flex items-center justify-between shadow-lg">
             <div className="flex items-center gap-3">
               <Bot className="w-6 h-6 text-white" />
-              <span className="font-black text-white text-[10px] uppercase tracking-widest">Concierge Oasis</span>
+              <span className="font-black text-white text-[11px] uppercase tracking-[0.18em]">Concierge Oasis</span>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-white hover:rotate-90 transition-transform"><X size={24}/></button>
           </div>

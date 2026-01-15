@@ -9,9 +9,16 @@ import BusinessSection from './components/BusinessSection';
 import BookingSection from './components/BookingSection';
 import FAQ from './components/FAQ';
 import ChatConsultant from './components/ChatConsultant';
-import { Droplets, Instagram, Facebook, Mail, MapPin } from 'lucide-react';
+import { Droplets, Instagram, Facebook, Mail, MapPin, Phone, MessageCircle } from 'lucide-react';
+import { SITE, formatTelLink, formatWhatsAppLink, isTruthyString } from './siteConfig';
 
 const App: React.FC = () => {
+  const telHref = formatTelLink(SITE.contact.phoneE164);
+  const whatsappHref = formatWhatsAppLink(
+    SITE.contact.whatsappE164,
+    "Bonjour, je voudrais une installation Shattaf en Guadeloupe. Pouvez-vous m'aider ?"
+  );
+
   return (
     <div className="min-h-screen selection:bg-cyan-500/30">
       <Header />
@@ -37,14 +44,36 @@ const App: React.FC = () => {
               <p className="text-gray-400 text-sm leading-relaxed font-light">
                 Redéfinir l'hygiène intime en Guadeloupe. Un virage culturel nécessaire pour votre santé, votre budget et notre île.
               </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-cyan-500 transition-colors"><Instagram className="w-5 h-5"/></a>
-                <a href="#" className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-cyan-500 transition-colors"><Facebook className="w-5 h-5"/></a>
-              </div>
+              {(isTruthyString(SITE.contact.instagramUrl) || isTruthyString(SITE.contact.facebookUrl)) && (
+                <div className="flex gap-4">
+                  {isTruthyString(SITE.contact.instagramUrl) && (
+                    <a
+                      href={SITE.contact.instagramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Instagram"
+                      className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-cyan-500 transition-colors"
+                    >
+                      <Instagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {isTruthyString(SITE.contact.facebookUrl) && (
+                    <a
+                      href={SITE.contact.facebookUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Facebook"
+                      className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-cyan-500 transition-colors"
+                    >
+                      <Facebook className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
-              <h4 className="font-bold mb-6 tracking-widest uppercase text-[10px] text-gray-500">Navigation</h4>
+              <h4 className="font-bold mb-6 uppercase text-[11px] text-gray-400 tracking-[0.18em]">Navigation</h4>
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li><a href="#philosophy" className="hover:text-cyan-400">Notre Vision</a></li>
                 <li><a href="#models" className="hover:text-cyan-400">La Gamme</a></li>
@@ -54,26 +83,63 @@ const App: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-6 tracking-widest uppercase text-[10px] text-gray-500">Contact</h4>
+              <h4 className="font-bold mb-6 uppercase text-[11px] text-gray-400 tracking-[0.18em]">Contact</h4>
               <ul className="space-y-4 text-gray-400 text-sm">
-                <li className="flex items-center gap-3"><Mail className="w-4 h-4 text-cyan-400"/> contact@oasis-shattaf.gp</li>
-                <li className="flex items-center gap-3"><MapPin className="w-4 h-4 text-cyan-400"/> Baie-Mahault, Guadeloupe</li>
-                <li className="flex items-center gap-3 text-white font-bold tracking-wider">+590 690 XX XX XX</li>
+                {isTruthyString(SITE.contact.email) && (
+                  <li className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-cyan-400" />
+                    <a className="hover:text-cyan-400 transition-colors" href={`mailto:${SITE.contact.email}`}>
+                      {SITE.contact.email}
+                    </a>
+                  </li>
+                )}
+                {isTruthyString(SITE.contact.address) && (
+                  <li className="flex items-center gap-3">
+                    <MapPin className="w-4 h-4 text-cyan-400" /> {SITE.contact.address}
+                  </li>
+                )}
+                {isTruthyString(SITE.contact.phoneDisplay) && isTruthyString(telHref) && (
+                  <li className="flex items-center gap-3 text-white font-bold tracking-wider">
+                    <Phone className="w-4 h-4 text-cyan-400" />
+                    <a className="hover:text-cyan-300 transition-colors" href={telHref}>
+                      {SITE.contact.phoneDisplay}
+                    </a>
+                  </li>
+                )}
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold mb-6 tracking-widest uppercase text-[10px] text-gray-500">Newsletter</h4>
-              <p className="text-gray-400 text-xs mb-4">Rejoignez la révolution de l'hygiène.</p>
-              <div className="flex gap-2">
-                <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex-1 text-xs outline-none focus:border-cyan-400" placeholder="Email"/>
-                <button className="px-4 py-2 btn-primary rounded-xl font-bold text-[10px] uppercase tracking-widest">OK</button>
+              <h4 className="font-bold mb-6 uppercase text-[11px] text-gray-400 tracking-[0.18em]">Contact rapide</h4>
+              <p className="text-gray-400 text-sm mb-6 font-light leading-relaxed">
+                Une question avant de réserver ? Écrivez-nous et on vous répond sous {SITE.offer.responseTime}.
+              </p>
+              <div className="flex flex-col gap-3">
+                {isTruthyString(whatsappHref) && (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-5 py-4 rounded-2xl bg-emerald-500/15 border border-emerald-400/20 text-emerald-200 font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                )}
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('booking:setMode', { detail: { isPro: false } }));
+                    document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-5 py-4 rounded-2xl btn-primary text-white font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:scale-[1.01] transition-all"
+                >
+                  Réserver une installation
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/5 text-center text-gray-600 text-[10px] uppercase tracking-[0.2em] font-bold">
-            © {new Date().getFullYear()} OASIS SHATTAF — HYGIÈNE & BIEN-ÊTRE EN GUADELOUPE.
+          <div className="pt-8 border-t border-white/5 text-center text-gray-500 text-[11px] uppercase tracking-[0.18em] font-bold">
+            © {new Date().getFullYear()} {SITE.brand.name} — HYGIÈNE & BIEN-ÊTRE EN GUADELOUPE.
           </div>
         </div>
       </footer>

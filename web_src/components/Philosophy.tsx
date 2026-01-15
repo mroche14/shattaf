@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { ShieldPlus, Wallet, Sparkles } from 'lucide-react';
+import { Clock, MapPin, ShieldPlus, Sparkles, Wallet } from 'lucide-react';
+import { SITE } from '../siteConfig';
 
 const Philosophy: React.FC = () => {
   return (
@@ -19,12 +20,12 @@ const Philosophy: React.FC = () => {
             {
               icon: ShieldPlus,
               title: "Hygiène Supérieure",
-              desc: "Le papier toilette étale les bactéries et irrite les tissus sensibles. L'eau pulvérisée nettoie en profondeur, sans contact, garantissant une propreté clinique."
+              desc: "Le papier essuie. L'eau nettoie. Le shattaf rince sans friction, puis vous séchez avec quelques feuilles."
             },
             {
               icon: Wallet,
               title: "Économies Réelles",
-              desc: "Le foyer moyen économise des centaines d'euros chaque année en réduisant sa consommation de papier. Un investissement rentable dès les premiers mois."
+              desc: "Réduit fortement la consommation de papier (selon habitudes). Moins d'achats, moins de stockage, plus de confort au quotidien."
             },
             {
               icon: Sparkles,
@@ -44,25 +45,38 @@ const Philosophy: React.FC = () => {
 
         <div className="mt-24 p-12 rounded-[60px] glass gold-border-subtle flex flex-col md:flex-row items-center gap-12">
           <div className="flex-1 space-y-6">
-            <h4 className="text-3xl font-display font-bold">Inspiré par l'Excellence Mondiale</h4>
+            <h4 className="text-3xl font-display font-bold">Le Standard International, <span className="cyan-gradient-text">adapté à la Guadeloupe.</span></h4>
             <p className="text-gray-400 font-light leading-relaxed">
-              Le Japon et les pays du Golfe (Dubaï) ont compris depuis longtemps que l'eau est irremplaçable. Oasis Shattaf adapte ces technologies de pointe à la Guadeloupe pour un mode de vie plus sain et moderne.
+              Inspiré des pays où l'hygiène à l'eau est un standard, et pensé pour notre quotidien (calcaire, humidité, usage intensif). Nous sélectionnons des modèles robustes et nous assurons l'installation proprement, chez vous.
             </p>
-            <div className="flex gap-6">
-               <div className="text-center">
-                 <div className="text-white font-black text-2xl">98%</div>
-                 <div className="text-[8px] text-gray-500 uppercase tracking-widest font-black">Satisfaction Client</div>
-               </div>
-               <div className="text-center">
-                 <div className="text-white font-black text-2xl">-80%</div>
-                 <div className="text-[8px] text-gray-500 uppercase tracking-widest font-black">Déchets Papier</div>
-               </div>
+            <div className="grid grid-cols-3 gap-6 pt-2">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-500/10 mb-3">
+                  <Clock className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="text-white font-black text-2xl">~{SITE.offer.installationTimeMinutes} min</div>
+                <div className="text-[11px] text-gray-400 uppercase tracking-[0.18em] font-black">Installation</div>
+              </div>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-500/10 mb-3">
+                  <MapPin className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="text-white font-black text-2xl">971</div>
+                <div className="text-[11px] text-gray-400 uppercase tracking-[0.18em] font-black">Guadeloupe</div>
+              </div>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-500/10 mb-3">
+                  <ShieldPlus className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="text-white font-black text-2xl">{SITE.offer.responseTime}</div>
+                <div className="text-[11px] text-gray-400 uppercase tracking-[0.18em] font-black">Réponse</div>
+              </div>
             </div>
           </div>
           <div className="w-full md:w-[400px] aspect-video rounded-[40px] overflow-hidden group">
              <img 
-               src="https://images.unsplash.com/photo-1507652313519-d451e12d5948?q=80&w=800&auto=format&fit=crop" 
-               alt="Luxury Bathroom Design"
+               src="/philosophy-bathroom.png" 
+               alt="Salle de bain moderne"
                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
              />
           </div>

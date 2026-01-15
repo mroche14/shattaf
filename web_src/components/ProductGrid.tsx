@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { PRODUCTS } from '../constants';
-import { Check, Star } from 'lucide-react';
+import { Check, Star, Wrench } from 'lucide-react';
+import { SITE } from '../siteConfig';
 
 const ProductGrid: React.FC = () => {
   return (
@@ -29,8 +30,8 @@ const ProductGrid: React.FC = () => {
                 <div className="absolute top-6 right-6 px-5 py-2 rounded-full glass border-white/20 font-black text-xl">
                   {product.price}€
                 </div>
-                {product.id === 'orizon-gold' && (
-                  <div className="absolute bottom-6 left-6 px-4 py-1 rounded-full gold-bg text-black text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                {product.id === 'oasis-royal-gold' && (
+                  <div className="absolute bottom-6 left-6 px-4 py-2 rounded-full gold-bg text-black text-[11px] font-black uppercase tracking-[0.18em] flex items-center gap-2">
                     <Star size={10} fill="black" /> Top Confort
                   </div>
                 )}
@@ -53,8 +54,17 @@ const ProductGrid: React.FC = () => {
                   ))}
                 </ul>
 
+                {SITE.offer.includesInstallation && (
+                  <div className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-[0.18em] text-gray-200">
+                    <Wrench className="w-4 h-4 text-cyan-300" /> Installation incluse (971)
+                  </div>
+                )}
+
                 <button 
-                  onClick={() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('booking:setMode', { detail: { isPro: false } }));
+                    document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="w-full py-5 rounded-2xl btn-primary text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all"
                 >
                   Choisir ce Modèle

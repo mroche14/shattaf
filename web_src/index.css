@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@source "./index.html";
+@source "./index.tsx";
+@source "./App.tsx";
+@source "./components/**/*.tsx";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #020617;
+  color: #f8fafc;
+}
+
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.glass {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gold-text {
+  background: linear-gradient(135deg, #bf953f, #fcf6ba, #aa771c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.gold-bg {
+  background: linear-gradient(135deg, #bf953f, #fcf6ba, #aa771c);
+}
+
+.cyan-gradient-text {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.5);
+  transform: translateY(-2px);
+}
+
+.cyan-glow {
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+.gold-glow {
+  box-shadow: 0 0 50px rgba(191, 149, 63, 0.08);
+}
+
+.gold-border-subtle {
+  border: 1px solid rgba(191, 149, 63, 0.18);
+}
+
+.mask-image {
+  mask-image: linear-gradient(to bottom, black 80%, transparent);
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
