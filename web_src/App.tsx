@@ -33,9 +33,9 @@ const App: React.FC = () => {
         <FAQ />
       </main>
 
-      <footer className="glass border-t border-white/5 pt-20 pb-10">
+      <footer className="glass border-t border-white/5 pt-12 md:pt-20 pb-10">
         <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-12 mb-16">
+          <div className="grid md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
             <div className="space-y-6">
               <div className="flex items-center gap-2">
                 <Droplets className="w-8 h-8 text-cyan-400" />

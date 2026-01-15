@@ -6,28 +6,28 @@ import { SITE } from '../siteConfig';
 
 const ProductGrid: React.FC = () => {
   return (
-    <section id="models" className="py-32 bg-[#010413]">
+    <section id="models" className="py-16 md:py-32 bg-[#010413]">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-12 text-center md:text-left">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-24 gap-8 md:gap-12 text-center md:text-left">
           <div className="space-y-4">
             <h2 className="text-cyan-400 text-xs font-black tracking-[0.4em] uppercase">La Collection</h2>
-            <h3 className="text-5xl font-display font-bold leading-none tracking-tighter">Précision & <span className="gold-text">Confort.</span></h3>
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold leading-none tracking-tighter">Précision & <span className="gold-text">Confort.</span></h3>
           </div>
           <p className="text-gray-400 max-w-md font-light text-lg">
             Chaque modèle est sélectionné pour sa robustesse face au calcaire et son design parfaitement intégré.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="grid md:grid-cols-3 gap-6 md:gap-10">
           {PRODUCTS.map((product) => (
-            <div key={product.id} className="group flex flex-col h-full glass rounded-[50px] overflow-hidden border-white/5 hover:border-cyan-500/30 transition-all duration-700">
+            <div key={product.id} className="group flex flex-col h-full glass rounded-[24px] md:rounded-[50px] overflow-hidden border-white/5 hover:border-cyan-500/30 transition-all duration-700">
               <div className="relative aspect-[4/5] overflow-hidden bg-gray-900">
                 <img 
                   src={product.image}
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
-                <div className="absolute top-6 right-6 px-5 py-2 rounded-full glass border-white/20 font-black text-xl">
+                <div className="absolute top-4 right-4 md:top-6 md:right-6 px-4 md:px-5 py-2 rounded-full glass border-white/20 font-black text-lg md:text-xl">
                   {product.price}€
                 </div>
                 {product.id === 'oasis-royal-gold' && (
@@ -37,7 +37,7 @@ const ProductGrid: React.FC = () => {
                 )}
               </div>
 
-              <div className="p-10 space-y-10 flex-1 flex flex-col">
+              <div className="p-6 md:p-10 space-y-6 md:space-y-10 flex-1 flex flex-col">
                 <div className="space-y-3">
                   <h4 className="text-2xl font-display font-bold">{product.name}</h4>
                   <p className="text-gray-500 text-sm leading-relaxed font-light">{product.description}</p>

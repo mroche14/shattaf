@@ -8,16 +8,16 @@ const Header: React.FC = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl btn-primary flex items-center justify-center shadow-lg">
             <Droplets className="w-6 h-6 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="font-display font-bold text-2xl tracking-tighter uppercase">
+            <span className="font-display font-bold text-lg sm:text-2xl tracking-tighter uppercase">
               OASIS <span className="cyan-gradient-text">SHATTAF</span>
             </span>
-            <span className="text-[11px] font-medium text-gray-300 tracking-widest uppercase">{SITE.brand.tagline}</span>
+            <span className="text-[9px] sm:text-[11px] font-medium text-gray-300 tracking-widest uppercase">{SITE.brand.tagline}</span>
           </div>
         </div>
 

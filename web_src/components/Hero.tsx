@@ -24,7 +24,7 @@ const Hero: React.FC = () => {
             <span className="text-cyan-300 text-[11px] font-black tracking-[0.22em] uppercase">Installation 971 — Hygiène à l’eau</span>
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-display font-extrabold leading-[0.95] tracking-tighter">
+          <h1 className="text-4xl sm:text-6xl md:text-8xl font-display font-extrabold leading-[0.95] tracking-tighter">
             Douchette WC <br />
             <span className="cyan-gradient-text">(Shattaf) installée chez vous.</span>
           </h1>
@@ -41,13 +41,13 @@ const Hero: React.FC = () => {
                   window.dispatchEvent(new CustomEvent('booking:setMode', { detail: { isPro: false } }));
                   document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="px-10 py-5 rounded-2xl btn-primary text-white font-black text-lg shadow-2xl flex items-center justify-center gap-3 uppercase tracking-wider"
+                className="px-6 sm:px-10 py-4 sm:py-5 rounded-2xl btn-primary text-white font-black text-base sm:text-lg shadow-2xl flex items-center justify-center gap-3 uppercase tracking-wider"
               >
                 Réserver mon installation <ArrowRight className="w-5 h-5" />
               </button>
               <button 
                 onClick={() => document.getElementById('models')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-10 py-5 rounded-2xl glass border-white/10 hover:bg-white/5 transition-all font-bold text-lg uppercase tracking-wider"
+                className="px-6 sm:px-10 py-4 sm:py-5 rounded-2xl glass border-white/10 hover:bg-white/5 transition-all font-bold text-base sm:text-lg uppercase tracking-wider"
               >
                 Voir la gamme
               </button>
@@ -93,27 +93,27 @@ const Hero: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative group">
-          <div className="relative glass rounded-[50px] p-4 animate-float cyan-glow overflow-hidden">
-            <div className="grid grid-cols-2 gap-4 h-[580px]">
-              <div className="relative overflow-hidden rounded-[40px]">
-                <img 
-                  src={`${base}hero-dubai.webp`} 
+        <div className="relative group hidden lg:block">
+          <div className="relative glass rounded-[30px] md:rounded-[50px] p-3 md:p-4 animate-float cyan-glow overflow-hidden">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 h-[450px] lg:h-[580px]">
+              <div className="relative overflow-hidden rounded-[25px] md:rounded-[40px]">
+                <img
+                  src={`${base}hero-dubai.webp`}
                   alt="Salle de bain premium (inspiration)"
                   className="w-full h-full object-cover brightness-75 transition-transform duration-1000 group-hover:scale-110"
                 />
-                <div className="absolute top-4 left-4 glass px-3 py-1 rounded-full text-[11px] font-black uppercase text-white tracking-[0.2em]">Standard premium</div>
+                <div className="absolute top-3 left-3 md:top-4 md:left-4 glass px-2 md:px-3 py-1 rounded-full text-[9px] md:text-[11px] font-black uppercase text-white tracking-[0.15em] md:tracking-[0.2em]">Standard premium</div>
               </div>
-              <div className="relative overflow-hidden rounded-[40px]">
-                <img 
-                  src={`${base}hero-guadeloupe.webp`} 
+              <div className="relative overflow-hidden rounded-[25px] md:rounded-[40px]">
+                <img
+                  src={`${base}hero-guadeloupe.webp`}
                   alt="Guadeloupe Island"
                   className="w-full h-full object-cover brightness-75 transition-transform duration-1000 group-hover:scale-110"
                 />
-                <div className="absolute top-4 left-4 glass px-3 py-1 rounded-full text-[11px] font-black uppercase text-white tracking-[0.2em]">Guadeloupe (971)</div>
+                <div className="absolute top-3 left-3 md:top-4 md:left-4 glass px-2 md:px-3 py-1 rounded-full text-[9px] md:text-[11px] font-black uppercase text-white tracking-[0.15em] md:tracking-[0.2em]">Guadeloupe (971)</div>
               </div>
             </div>
-            <div className="absolute bottom-10 left-10 right-10 glass p-8 rounded-[32px] border-cyan-500/20">
+            <div className="absolute bottom-6 left-6 right-6 md:bottom-10 md:left-10 md:right-10 glass p-5 md:p-8 rounded-[20px] md:rounded-[32px] border-cyan-500/20">
                <div className="flex items-center gap-3 mb-3">
                  <CheckCircle className="w-5 h-5 text-cyan-400" />
                  <span className="gold-text text-xs uppercase font-black tracking-[0.2em]">Confort quotidien</span>

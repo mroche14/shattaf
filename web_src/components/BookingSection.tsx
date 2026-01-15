@@ -93,13 +93,13 @@ const BookingSection: React.FC = () => {
 
   if (success) {
     return (
-      <section id="booking" className="py-32 flex items-center justify-center">
-        <div className="glass p-16 rounded-[60px] text-center space-y-10 max-w-xl border-cyan-500/30 cyan-glow">
+      <section id="booking" className="py-16 md:py-32 flex items-center justify-center px-6">
+        <div className="glass p-8 sm:p-12 md:p-16 rounded-[24px] md:rounded-[60px] text-center space-y-6 md:space-y-10 max-w-xl border-cyan-500/30 cyan-glow">
           <div className="w-24 h-24 btn-primary rounded-full flex items-center justify-center mx-auto shadow-2xl">
             <CheckCircle2 className="w-12 h-12 text-white" />
           </div>
           <div className="space-y-4">
-            <h2 className="text-4xl font-display font-black text-white">Demande prête</h2>
+            <h2 className="text-2xl sm:text-4xl font-display font-black text-white">Demande prête</h2>
             <p className="text-gray-400 text-lg font-light leading-relaxed">
               Si WhatsApp ou votre email s'est ouvert, envoyez le message : nous vous répondons sous {SITE.offer.responseTime} pour confirmer le créneau et les modalités.
             </p>
@@ -111,12 +111,12 @@ const BookingSection: React.FC = () => {
   }
 
   return (
-    <section id="booking" className="py-32 relative">
+    <section id="booking" className="py-16 md:py-32 relative">
       <div className="container mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-20 items-center">
+        <div className="grid lg:grid-cols-2 gap-10 md:gap-20 items-center">
           <div className="space-y-10">
             <h2 className="text-cyan-400 text-xs font-black tracking-[0.4em] uppercase">Service & Réservation</h2>
-            <h3 className="text-5xl md:text-8xl font-display font-black leading-none tracking-tighter">Votre Espace, <br/> <span className="cyan-gradient-text">Votre Hygiène.</span></h3>
+            <h3 className="text-3xl sm:text-5xl md:text-8xl font-display font-black leading-none tracking-tighter">Votre Espace, <br/> <span className="cyan-gradient-text">Votre Hygiène.</span></h3>
             
             <div className="flex gap-2 p-1 glass rounded-2xl w-fit">
               <button 
@@ -134,7 +134,7 @@ const BookingSection: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              <p className="text-gray-400 text-xl font-light leading-relaxed">
+              <p className="text-gray-400 text-base md:text-xl font-light leading-relaxed">
                 {isPro 
                   ? "Solutions de volume pour hôtels, villas de luxe et entreprises. Bénéficiez d'une logistique dédiée et d'un support prioritaire."
                   : "Améliorez votre quotidien. Nous installons chez vous en ~30 minutes, proprement et avec soin."
@@ -161,7 +161,7 @@ const BookingSection: React.FC = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="glass p-10 md:p-14 rounded-[60px] border-white/5 space-y-8 shadow-2xl relative">
+          <form onSubmit={handleSubmit} className="glass p-6 sm:p-10 md:p-14 rounded-[24px] md:rounded-[60px] border-white/5 space-y-6 md:space-y-8 shadow-2xl relative">
             <div className="space-y-6">
               <div className="space-y-3">
                 <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.18em]">Modèle Oasis</label>

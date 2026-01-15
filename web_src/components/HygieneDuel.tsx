@@ -4,17 +4,17 @@ import { Eraser, ShowerHead, Droplets, CheckCircle2, XCircle, TrendingDown } fro
 
 const HygieneDuel: React.FC = () => {
   return (
-    <section className="py-24 relative overflow-hidden bg-[#020617]">
+    <section className="py-12 md:py-24 relative overflow-hidden bg-[#020617]">
       <div className="container mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
           <h2 className="text-cyan-400 text-xs font-black tracking-[0.4em] uppercase">Le Match de la Vérité</h2>
-          <h3 className="text-4xl md:text-6xl font-display font-bold">L'Analyse du <span className="cyan-gradient-text">Nettoyage.</span></h3>
+          <h3 className="text-3xl sm:text-4xl md:text-6xl font-display font-bold">L'Analyse du <span className="cyan-gradient-text">Nettoyage.</span></h3>
           <p className="text-gray-400 font-light">Un schéma simple pour comprendre pourquoi l'hygiène à l'eau est devenue un standard dans de nombreux pays.</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12 items-stretch">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-stretch">
           {/* L'Ancien Monde */}
-          <div className="glass p-10 rounded-[50px] border-red-500/10 relative group">
+          <div className="glass p-6 md:p-10 rounded-[24px] md:rounded-[50px] border-red-500/10 relative group">
             <div className="absolute -top-4 -left-4 px-4 py-2 bg-red-500/20 text-red-300 rounded-full text-[11px] font-black uppercase tracking-[0.18em] border border-red-500/20">
               Papier seul
             </div>
@@ -25,7 +25,7 @@ const HygieneDuel: React.FC = () => {
                   <Eraser size={32} />
                 </div>
                 <div>
-                  <h4 className="text-2xl font-display font-bold">Le Papier Seul</h4>
+                  <h4 className="text-xl md:text-2xl font-display font-bold">Le Papier Seul</h4>
                   <p className="text-gray-500 text-sm">On essuie. Souvent, on doit repasser.</p>
                 </div>
               </div>
@@ -64,7 +64,7 @@ const HygieneDuel: React.FC = () => {
           </div>
 
           {/* Le Monde Oasis */}
-          <div className="glass p-10 rounded-[50px] border-cyan-500/20 relative gold-glow">
+          <div className="glass p-6 md:p-10 rounded-[24px] md:rounded-[50px] border-cyan-500/20 relative gold-glow">
              <div className="absolute -top-4 -right-4 px-4 py-2 gold-bg text-black rounded-full text-[11px] font-black uppercase tracking-[0.18em] shadow-xl">
               Standard Oasis Shattaf
             </div>
@@ -75,7 +75,7 @@ const HygieneDuel: React.FC = () => {
                   <Droplets size={32} />
                 </div>
                 <div>
-                  <h4 className="text-2xl font-display font-bold">Le Shattaf Oasis</h4>
+                  <h4 className="text-xl md:text-2xl font-display font-bold">Le Shattaf Oasis</h4>
                   <p className="text-cyan-400 text-sm font-bold">On purifie, on apaise, on revit.</p>
                 </div>
               </div>
@@ -114,8 +114,8 @@ const HygieneDuel: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-16 text-center">
-          <div className="inline-block glass px-8 py-4 rounded-full border-cyan-500/10">
+        <div className="mt-8 md:mt-16 text-center">
+          <div className="inline-block glass px-4 sm:px-8 py-3 sm:py-4 rounded-full border-cyan-500/10">
             <p className="text-sm font-light text-gray-400 italic">
               "Laver ses mains sales avec du papier sec ? Vous ne le feriez jamais. Pourquoi faire exception pour le reste ?"
             </p>
