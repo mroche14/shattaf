@@ -61,7 +61,7 @@ const BusinessSection: React.FC = () => {
 
           <div className="w-full lg:w-1/3 aspect-[3/4] rounded-[50px] overflow-hidden shadow-2xl relative group">
             <img 
-              src={`${base}business-installation.png`} 
+              src={`${base}business-installation.webp`} 
               alt="Installation Professionnelle"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
             />

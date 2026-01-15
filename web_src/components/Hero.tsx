@@ -98,7 +98,7 @@ const Hero: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 h-[580px]">
               <div className="relative overflow-hidden rounded-[40px]">
                 <img 
-                  src={`${base}hero-dubai.png`} 
+                  src={`${base}hero-dubai.webp`} 
                   alt="Salle de bain premium (inspiration)"
                   className="w-full h-full object-cover brightness-75 transition-transform duration-1000 group-hover:scale-110"
                 />
@@ -106,7 +106,7 @@ const Hero: React.FC = () => {
               </div>
               <div className="relative overflow-hidden rounded-[40px]">
                 <img 
-                  src={`${base}hero-guadeloupe.png`} 
+                  src={`${base}hero-guadeloupe.webp`} 
                   alt="Guadeloupe Island"
                   className="w-full h-full object-cover brightness-75 transition-transform duration-1000 group-hover:scale-110"
                 />

@@ -9,7 +9,7 @@ export const PRODUCTS: Product[] = [
     name: 'Oasis Pure Chrome',
     price: 95,
     description: "L'élégance de la simplicité. Acier inoxydable poli, robuste et agréable au quotidien.",
-    image: `${base}product-chrome.png`,
+    image: `${base}product-chrome.webp`,
     features: ["Hygiène à l'eau (plus confortable)", 'Pression modulable', 'Réduit fortement le papier (selon usage)']
   },
   {
@@ -17,7 +17,7 @@ export const PRODUCTS: Product[] = [
     name: 'Oasis Royal Gold',
     price: 185,
     description: 'La touche premium. Finition dorée élégante pour transformer votre salle de bain en spa du quotidien.',
-    image: `${base}product-gold.png`,
+    image: `${base}product-gold.webp`,
     features: ['Finition premium', 'Jet confort bien-être', 'Garantie constructeur + SAV local']
   },
   {
@@ -25,7 +25,7 @@ export const PRODUCTS: Product[] = [
     name: 'Oasis Obsidian Mat',
     price: 135,
     description: 'Design contemporain et furtif. Un revêtement mat anti-traces pour une fraîcheur moderne et efficace.',
-    image: `${base}product-black.png`,
+    image: `${base}product-black.webp`,
     features: ['Revêtement mat anti-traces', 'Ergonomie intuitive', 'Moins de frottement = plus de confort']
   }
 ];

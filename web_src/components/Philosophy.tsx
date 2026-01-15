@@ -77,7 +77,7 @@ const Philosophy: React.FC = () => {
           </div>
           <div className="w-full md:w-[400px] aspect-video rounded-[40px] overflow-hidden group">
              <img 
-               src={`${base}philosophy-bathroom.png`} 
+               src={`${base}philosophy-bathroom.webp`} 
                alt="Salle de bain moderne"
                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
              />
