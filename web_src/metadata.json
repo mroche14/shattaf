@@ -1,0 +1,7 @@
+{
+  "name": "Oasis Shattaf - Premium Shattaf Solutions",
+  "description": "Luxury shattaf installation and retail service in Guadeloupe, bringing the Dubai standard of hygiene to the Caribbean.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
