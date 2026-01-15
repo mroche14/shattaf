@@ -3,6 +3,8 @@ import React from 'react';
 import { Clock, MapPin, ShieldPlus, Sparkles, Wallet } from 'lucide-react';
 import { SITE } from '../siteConfig';
 
+const base = import.meta.env.BASE_URL;
+
 const Philosophy: React.FC = () => {
   return (
     <section id="philosophy" className="py-32 relative">
@@ -75,7 +77,7 @@ const Philosophy: React.FC = () => {
           </div>
           <div className="w-full md:w-[400px] aspect-video rounded-[40px] overflow-hidden group">
              <img 
-               src="/philosophy-bathroom.png" 
+               src={`${base}philosophy-bathroom.png`} 
                alt="Salle de bain moderne"
                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
              />

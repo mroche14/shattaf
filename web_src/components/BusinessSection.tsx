@@ -3,6 +3,8 @@ import React from 'react';
 import { Building2, Hotel, Briefcase, BadgeCheck } from 'lucide-react';
 import { SITE } from '../siteConfig';
 
+const base = import.meta.env.BASE_URL;
+
 const BusinessSection: React.FC = () => {
   return (
     <section id="business" className="py-24 relative overflow-hidden">
@@ -59,7 +61,7 @@ const BusinessSection: React.FC = () => {
 
           <div className="w-full lg:w-1/3 aspect-[3/4] rounded-[50px] overflow-hidden shadow-2xl relative group">
             <img 
-              src="/business-installation.png" 
+              src={`${base}business-installation.png`} 
               alt="Installation Professionnelle"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
             />

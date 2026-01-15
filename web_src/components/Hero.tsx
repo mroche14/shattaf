@@ -3,6 +3,8 @@ import React from 'react';
 import { ArrowRight, CheckCircle, Clock, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { SITE, formatWhatsAppLink, isTruthyString } from '../siteConfig';
 
+const base = import.meta.env.BASE_URL;
+
 const Hero: React.FC = () => {
   const whatsappHref = formatWhatsAppLink(
     SITE.contact.whatsappE164,
@@ -96,7 +98,7 @@ const Hero: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 h-[580px]">
               <div className="relative overflow-hidden rounded-[40px]">
                 <img 
-                  src="/hero-dubai.png" 
+                  src={`${base}hero-dubai.png`} 
                   alt="Salle de bain premium (inspiration)"
                   className="w-full h-full object-cover brightness-75 transition-transform duration-1000 group-hover:scale-110"
                 />
@@ -104,7 +106,7 @@ const Hero: React.FC = () => {
               </div>
               <div className="relative overflow-hidden rounded-[40px]">
                 <img 
-                  src="/hero-guadeloupe.png" 
+                  src={`${base}hero-guadeloupe.png`} 
                   alt="Guadeloupe Island"
                   className="w-full h-full object-cover brightness-75 transition-transform duration-1000 group-hover:scale-110"
                 />
