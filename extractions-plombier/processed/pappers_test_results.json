@@ -1,0 +1,9 @@
+{
+  "total_tested": 100,
+  "with_phone": 0,
+  "with_email": 0,
+  "with_site_web": 0,
+  "errors": 100,
+  "not_found": 0,
+  "details": []
+}

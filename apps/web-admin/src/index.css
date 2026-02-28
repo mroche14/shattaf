@@ -1,0 +1,81 @@
+@import "tailwindcss";
+@import "@shattaf/ui-kit/styles.css";
+
+/* Web Admin - Dashboard */
+
+/* Admin accent: clean indigo-blue instead of purple */
+.admin-gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.admin-glow {
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.12);
+}
+
+/* Keep old class name for backward compat */
+.violet-gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.violet-glow {
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.12);
+}
+
+/* Sidebar */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.sidebar-link:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.sidebar-link.active {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border-left: 2px solid #6366f1;
+}
+
+:root:not(.dark) .sidebar-link.active {
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+}
+
+/* Leaflet map overrides */
+.leaflet-container {
+  background: var(--bg-inner);
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-elevated);
+}
+
+.leaflet-control-zoom a {
+  background-color: var(--bg-panel) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--bg-hover) !important;
+}

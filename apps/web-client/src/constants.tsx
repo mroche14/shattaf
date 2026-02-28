@@ -1,0 +1,82 @@
+
+import { Product, FAQItem } from './types';
+
+const base = import.meta.env.BASE_URL;
+
+export const PRODUCTS: Product[] = [
+  {
+    id: 'oasis-pure-chrome',
+    name: 'Oasis Pure Chrome',
+    price: 95,
+    description: "L'élégance de la simplicité. Acier inoxydable poli, robuste et agréable au quotidien.",
+    image: `${base}product-chrome.webp`,
+    features: ["Hygiène à l'eau (plus confortable)", 'Pression modulable', 'Réduit fortement le papier (selon usage)']
+  },
+  {
+    id: 'oasis-royal-gold',
+    name: 'Oasis Royal Gold',
+    price: 185,
+    description: 'La touche premium. Finition dorée élégante pour transformer votre salle de bain en spa du quotidien.',
+    image: `${base}product-gold.webp`,
+    features: ['Finition premium', 'Jet confort bien-être', 'Garantie constructeur + SAV local']
+  },
+  {
+    id: 'oasis-obsidian-mat',
+    name: 'Oasis Obsidian Mat',
+    price: 135,
+    description: 'Design contemporain et furtif. Un revêtement mat anti-traces pour une fraîcheur moderne et efficace.',
+    image: `${base}product-black.webp`,
+    features: ['Revêtement mat anti-traces', 'Ergonomie intuitive', 'Moins de frottement = plus de confort']
+  }
+];
+
+export const FAQS: FAQItem[] = [
+  {
+    question: "Pourquoi privilégier l'eau au papier toilette ?",
+    answer: "Le papier essuie, l'eau nettoie. Le shattaf rince en douceur, puis vous séchez avec quelques feuilles : résultat plus propre, plus confortable, et une vraie sensation de fraîcheur."
+  },
+  {
+    question: "Est-ce un choix économique en Guadeloupe ?",
+    answer: "Oui, en général. Vous utilisez nettement moins de papier (selon habitudes), ce qui réduit les achats récurrents et le stockage à la maison."
+  },
+  {
+    question: "Est-ce compatible avec mon WC ?",
+    answer: "Dans la majorité des cas, oui : WC standard + arrivée d'eau avec robinet d'arrêt. Avant l'intervention, on confirme avec vous la configuration."
+  },
+  {
+    question: "L'installation est-elle incluse ? Et ça prend combien de temps ?",
+    answer: "Notre service est pensé “clé en main”. En général, l'installation se fait rapidement (souvent ~30 minutes) et sans gros travaux."
+  },
+  {
+    question: "Est-ce que ça met de l'eau partout ?",
+    answer: "Non : la pression est modulable et l'usage est simple. On vous montre le bon geste : rinçage + séchage rapide."
+  },
+  {
+    question: "Et le calcaire en Guadeloupe ?",
+    answer: "Tous nos modèles sont équipés d'un système anti-calcaire intégré, spécialement adapté aux conditions de l'eau en Guadeloupe. Un nettoyage simple régulier suffit, et on vous donne les bonnes pratiques."
+  },
+  {
+    question: "Les produits sont-ils conformes aux normes de sécurité ?",
+    answer: "Oui, tous nos shattafs sont équipés d'un dispositif anti-retour certifié NF/CE conforme aux normes européennes. Ce clapet empêche tout reflux d'eau usée vers le réseau d'eau potable, garantissant une installation 100% sécurisée."
+  },
+  {
+    question: "Y a-t-il un risque de fuite ?",
+    answer: "Comme toute installation plomberie, ça se joue sur la qualité des raccords et de la pose. On installe proprement, on teste sur place, et vous avez un support local en cas de besoin."
+  },
+  {
+    question: "Comment se passe la réservation ?",
+    answer: "Vous remplissez le formulaire, on confirme le créneau et les détails (adresse, accès, modèle), puis on intervient à la date convenue."
+  },
+  {
+    question: "Quels moyens de paiement acceptez-vous ?",
+    answer: "Selon la configuration, nous proposons paiement sur place ou lien sécurisé. Les modalités exactes sont confirmées lors de la validation du créneau."
+  },
+  {
+    question: "Offrez-vous des tarifs dégressifs ?",
+    answer: "Oui ! Pour les particuliers, nous offrons une remise de 10% sur l'ensemble de la commande à partir de 3 unités. Pour les professionnels (hôtels, résidences), nous proposons des tarifs sur-mesure."
+  },
+  {
+    question: "Proposez-vous des installations pour les hôtels ?",
+    answer: "Oui. Nous gérons l'installation en volume (hôtels, villas, résidences, Airbnb) avec tarification dégressive et organisation adaptée (planning, maintenance, support)."
+  }
+];

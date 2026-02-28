@@ -1,0 +1,24 @@
+{
+  "name": "shattaf-marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "concurrently -n api,client,pro,admin -c cyan,blue,green,magenta \"pnpm dev:api\" \"pnpm dev:web-client\" \"pnpm dev:web-pro\" \"pnpm dev:web-admin\"",
+    "dev:api": "cd apps/api && .venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8010",
+    "dev:web-client": "turbo run dev --filter=web-client",
+    "dev:web-pro": "turbo run dev --filter=web-pro",
+    "dev:web-admin": "turbo run dev --filter=web-admin",
+    "dev:frontend": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}

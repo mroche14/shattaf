@@ -1,0 +1,59 @@
+
+import React from 'react';
+import { Droplets, Menu, X } from 'lucide-react';
+import { ThemeToggle } from '@shattaf/ui-kit';
+import { SITE } from '../../siteConfig';
+
+const Header: React.FC = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--border-color)]">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl btn-primary flex items-center justify-center shadow-lg">
+            <Droplets className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-display font-bold text-lg sm:text-2xl tracking-tighter uppercase">
+              OASIS <span className="cyan-gradient-text">SHATTAF</span>
+            </span>
+            <span className="text-[9px] sm:text-[11px] font-medium text-[var(--text-secondary)] tracking-widest uppercase">{SITE.brand.tagline}</span>
+          </div>
+        </div>
+
+        <nav className="hidden md:flex items-center gap-10 text-[11px] font-black tracking-[0.18em] text-[var(--text-secondary)]">
+          <a href="#philosophy" className="hover:text-[var(--text-main)] transition-all uppercase">Pourquoi l'eau</a>
+          <a href="#models" className="hover:text-[var(--text-main)] transition-all uppercase">La Gamme</a>
+          <a href="#business" className="hover:text-[var(--text-main)] transition-all uppercase">Pro</a>
+          <a href="#booking" className="hover:text-[var(--text-main)] transition-all uppercase">Installation</a>
+          <ThemeToggle />
+          <button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('booking:setMode', { detail: { isPro: false } }));
+              document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="px-8 py-3 rounded-xl btn-primary text-white font-black hover:scale-105 transition-all shadow-xl uppercase"
+          >
+            Réserver
+          </button>
+        </nav>
+
+        <button className="md:hidden text-[var(--text-main)]" onClick={() => setIsOpen(!isOpen)}>
+          {isOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="md:hidden glass absolute top-full left-0 right-0 p-8 flex flex-col gap-6 text-center animate-in slide-in-from-top duration-300">
+          <a href="#philosophy" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Pourquoi l'eau</a>
+          <a href="#models" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Modèles</a>
+          <a href="#business" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Professionnels</a>
+          <a href="#booking" className="text-xl font-bold" onClick={() => setIsOpen(false)}>Réserver</a>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;

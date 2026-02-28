@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "@shattaf/ui-kit/styles.css";
+
+/* Web Pro - Plumber PWA */
+
+/* Emerald gradient text */
+.emerald-gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Emerald glow */
+.emerald-glow {
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
+}
+
+/* PWA safe areas */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ============================================
+   Landing Page Semantic Classes
+   ============================================ */
+
+/* Background surfaces */
+.bg-primary {
+  background: var(--bg-root);
+}
+
+.bg-secondary {
+  background: var(--bg-panel);
+}
+
+/* Text colors */
+.text-primary {
+  color: var(--text-main);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-tertiary {
+  color: var(--text-tertiary);
+}
+
+/* Hover states */
+.hover\:text-primary:hover {
+  color: var(--text-main);
+}
+
+/* Border */
+.border-theme {
+  border-color: var(--border-color);
+}
