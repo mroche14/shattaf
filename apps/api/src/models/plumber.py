@@ -22,17 +22,11 @@ class PlumberStatus(str, Enum):
 
 
 class Department(str, Enum):
-    """French departments where service is available."""
+    """French overseas departments where service is available."""
 
-    # DOM-TOM
     GUADELOUPE = "971"
     MARTINIQUE = "972"
     GUYANE = "973"
-    # France métropolitaine
-    COTE_DOR = "21"
-    GERS = "32"
-    MAYENNE = "53"
-    HAUT_RHIN = "68"
 
 
 class PlumberProfile(BaseModel, table=True):

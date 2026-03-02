@@ -546,6 +546,189 @@ async def get_coverage_stats(
 
 # ============== Matching ==============
 
+
+class SimulatePointRequest(BaseModel):
+    lat: float
+    lng: float
+    department: Optional[str] = None
+    weights: Optional[dict[str, float]] = None
+
+
+class PlumberScoreItem(BaseModel):
+    plumber_id: str
+    name: str
+    distance_km: float
+    total_score: float
+    proximity_score: float
+    quality_score: float
+    load_score: float
+    total_jobs_completed: int
+    average_rating: Optional[float]
+    total_ratings: int
+    lat: float
+    lng: float
+    radius_km: float
+    rank: int
+
+
+class SimulatePointResponse(BaseModel):
+    point: dict
+    weights: dict
+    results: List[PlumberScoreItem]
+    total_candidates: int
+
+
+class GeocodeAddressRequest(BaseModel):
+    address: str
+    department: Optional[str] = None
+
+
+class GeocodeAddressResponse(BaseModel):
+    lat: float
+    lng: float
+    label: str
+    score: float
+
+
+@router.post("/matching/geocode", response_model=GeocodeAddressResponse)
+async def geocode_address(
+    data: GeocodeAddressRequest,
+    _current_user: User = Depends(get_current_admin_user),
+):
+    """Geocode a single address using the French BAN API.
+
+    When a department is provided, first tries a municipality search scoped to
+    that department (handles DOM-TOM town names correctly), then falls back to
+    a generic search with the department as a postcode hint.
+    """
+    import httpx
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        feature = None
+
+        # Strategy 1: municipality search scoped to department
+        if data.department:
+            try:
+                resp = await client.get(
+                    "https://api-adresse.data.gouv.fr/search/",
+                    params={
+                        "q": data.address,
+                        "type": "municipality",
+                        "citycode": None,  # not used, but postcode filters well
+                        "postcode": data.department,  # e.g. "971" matches 971xx
+                        "limit": 1,
+                    },
+                )
+                resp.raise_for_status()
+                features = resp.json().get("features", [])
+                if features:
+                    feature = features[0]
+            except httpx.HTTPError:
+                pass
+
+        # Strategy 2: general search with department hint appended
+        if not feature and data.department:
+            try:
+                resp = await client.get(
+                    "https://api-adresse.data.gouv.fr/search/",
+                    params={
+                        "q": f"{data.address} {data.department}",
+                        "limit": 5,
+                    },
+                )
+                resp.raise_for_status()
+                features = resp.json().get("features", [])
+                # Pick the first result whose postcode starts with the department
+                for f in features:
+                    pc = f["properties"].get("postcode", "")
+                    if pc.startswith(data.department):
+                        feature = f
+                        break
+                if not feature and features:
+                    feature = features[0]
+            except httpx.HTTPError:
+                pass
+
+        # Strategy 3: plain search (no department context)
+        if not feature:
+            try:
+                resp = await client.get(
+                    "https://api-adresse.data.gouv.fr/search/",
+                    params={"q": data.address, "limit": 1},
+                )
+                resp.raise_for_status()
+                features = resp.json().get("features", [])
+                if features:
+                    feature = features[0]
+            except httpx.HTTPError:
+                raise HTTPException(status_code=502, detail="Erreur de géocodage (BAN API)")
+
+    if not feature:
+        raise HTTPException(status_code=404, detail="Adresse introuvable")
+
+    coords = feature["geometry"]["coordinates"]  # [lng, lat]
+    props = feature["properties"]
+
+    return GeocodeAddressResponse(
+        lat=coords[1],
+        lng=coords[0],
+        label=props.get("label", data.address),
+        score=props.get("score", 0),
+    )
+
+
+@router.post("/matching/simulate-point", response_model=SimulatePointResponse)
+async def simulate_matching_at_point_endpoint(
+    data: SimulatePointRequest,
+    session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_admin_user),
+):
+    """Simulate plumber matching at a given point on the map."""
+    from ..services.matching import simulate_matching_at_point, DEFAULT_WEIGHTS, _normalize_weights
+
+    scored = await simulate_matching_at_point(
+        session=session,
+        lat=data.lat,
+        lng=data.lng,
+        department=data.department,
+        weights=data.weights,
+    )
+
+    # Resolve user names and build response items
+    results = []
+    for rank, item in enumerate(scored, start=1):
+        plumber = item["plumber"]
+        user = await session.get(User, plumber.user_id)
+        name = f"{user.first_name} {user.last_name}" if user else "Inconnu"
+        results.append(PlumberScoreItem(
+            plumber_id=str(plumber.id),
+            name=name,
+            distance_km=item["distance_km"],
+            total_score=item["total_score"],
+            proximity_score=item["proximity_score"],
+            quality_score=item["quality_score"],
+            load_score=item["load_score"],
+            total_jobs_completed=plumber.total_jobs_completed,
+            average_rating=plumber.average_rating,
+            total_ratings=plumber.total_ratings,
+            lat=plumber.service_area_lat,
+            lng=plumber.service_area_lng,
+            radius_km=plumber.service_area_radius_km,
+            rank=rank,
+        ))
+
+    # Normalize weights for the response
+    used_weights = _normalize_weights(data.weights)
+    display_weights = {k: round(v * 100, 1) for k, v in used_weights.items()}
+
+    return SimulatePointResponse(
+        point={"lat": data.lat, "lng": data.lng},
+        weights=display_weights,
+        results=results,
+        total_candidates=len(results),
+    )
+
+
 @router.get("/matching/unmatched")
 async def get_unmatched_bookings(
     session: AsyncSession = Depends(get_session),

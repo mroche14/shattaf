@@ -195,6 +195,16 @@ export const adminApi = {
       }>(`/admin/matching/simulate/${bookingId}`),
     getUnmatchedBookings: () =>
       request<BookingFull[]>('/admin/matching/unmatched'),
+    simulatePoint: (data: SimulatePointRequest) =>
+      request<SimulatePointResponse>('/admin/matching/simulate-point', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    geocodeAddress: (address: string, department?: string) =>
+      request<GeocodeAddressResult>('/admin/matching/geocode', {
+        method: 'POST',
+        body: JSON.stringify({ address, department }),
+      }),
   },
 
   // Audit logs
@@ -232,6 +242,14 @@ export const adminApi = {
       request<{ updated: number }>('/admin/prospects/bulk-status', {
         method: 'POST',
         body: JSON.stringify({ prospect_ids: prospectIds, contact_status: contactStatus }),
+      }),
+    getMap: (departement?: string) => {
+      const query = departement ? `?departement=${departement}` : '';
+      return request<ProspectMapItem[]>(`/admin/prospects/map${query}`);
+    },
+    geocode: () =>
+      request<GeocodeResult>('/admin/prospects/geocode', {
+        method: 'POST',
       }),
     import: async (file: File) => {
       const token = useAuthStore.getState().token;
@@ -488,6 +506,15 @@ interface ProspectListResponse {
   pages: number;
 }
 
+interface ProspectBreakdown {
+  individuelsWithPhone: number;
+  individuelsWithEmail: number;
+  societesWithPhone: number;
+  societesWithEmail: number;
+  unknownWithPhone: number;
+  unknownWithEmail: number;
+}
+
 interface ProspectStats {
   total: number;
   withTelephone: number;
@@ -496,6 +523,7 @@ interface ProspectStats {
   byDepartement: Record<string, number>;
   individuels: number;
   societes: number;
+  breakdown: ProspectBreakdown;
 }
 
 interface ProspectUpdateData {
@@ -508,6 +536,64 @@ interface ImportResult {
   created: number;
   updated: number;
   errors: string[];
+}
+
+interface ProspectMapItem {
+  id: string;
+  lat: number;
+  lng: number;
+  name: string;
+  departement?: string;
+  contactStatus: ContactStatus;
+  individuel?: boolean;
+  telephone?: string;
+  email?: string;
+  ville?: string;
+}
+
+interface GeocodeResult {
+  geocoded: number;
+  failed: number;
+  skipped: number;
+}
+
+// Matching simulation types
+interface SimulatePointRequest {
+  lat: number;
+  lng: number;
+  department?: string;
+  weights?: { proximity: number; quality: number; load: number };
+}
+
+interface GeocodeAddressResult {
+  lat: number;
+  lng: number;
+  label: string;
+  score: number;
+}
+
+interface PlumberScoreItem {
+  plumber_id: string;
+  name: string;
+  distance_km: number;
+  total_score: number;
+  proximity_score: number;
+  quality_score: number;
+  load_score: number;
+  total_jobs_completed: number;
+  average_rating: number | null;
+  total_ratings: number;
+  lat: number;
+  lng: number;
+  radius_km: number;
+  rank: number;
+}
+
+interface SimulatePointResponse {
+  point: { lat: number; lng: number };
+  weights: { proximity: number; quality: number; load: number };
+  results: PlumberScoreItem[];
+  total_candidates: number;
 }
 
 export type {
@@ -527,7 +613,14 @@ export type {
   ProspectListParams,
   ProspectListResponse,
   ProspectStats,
+  ProspectBreakdown,
   ProspectUpdateData,
   ContactStatus,
   ImportResult,
+  ProspectMapItem,
+  GeocodeResult,
+  SimulatePointRequest,
+  PlumberScoreItem,
+  SimulatePointResponse,
+  GeocodeAddressResult,
 };

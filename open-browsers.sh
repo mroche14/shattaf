@@ -24,5 +24,8 @@ $PYTHON -c "import playwright" 2>/dev/null || {
     $PYTHON -m playwright install chromium
 }
 
+# Suppress Node.js deprecation warnings from Playwright's internals
+export NODE_OPTIONS="--no-deprecation"
+
 # Run the browser script (pass all args through)
 $PYTHON scripts/open-browsers.py "$@"

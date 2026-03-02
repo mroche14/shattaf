@@ -1,13 +1,14 @@
 """Admin API endpoints for plumber prospects."""
 
+import asyncio
+import logging
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..database import get_session
 from ..models.user import User
-from ..models.prospect import ContactStatus
+from ..models.prospect import ContactStatus, PlumberProspect
 from ..schemas.prospect import (
     ProspectResponse,
     ProspectUpdate,
@@ -15,10 +16,19 @@ from ..schemas.prospect import (
     ProspectFilters,
     ProspectStats,
     ProspectListResponse,
+    ProspectMapItem,
     ImportResult,
 )
 from ..services.prospect import ProspectService
+from ..services.geocoding import GeocodingService
+from .. import database
+from ..database import get_session
 from ..utils.deps import get_current_admin_user
+
+logger = logging.getLogger(__name__)
+
+# Lock to prevent concurrent geocoding runs
+_geocoding_lock = asyncio.Lock()
 
 router = APIRouter(prefix="/admin/prospects", tags=["admin-prospects"])
 
@@ -70,6 +80,93 @@ async def get_prospect_stats(
     """Get prospect statistics."""
     service = ProspectService(session)
     return await service.get_stats()
+
+
+async def _run_geocoding_background():
+    """Background task: geocode all un-geocoded prospects."""
+    if _geocoding_lock.locked():
+        return  # Already running
+    async with _geocoding_lock:
+        from sqlalchemy import select, func
+
+        async with database.async_session_factory() as session:
+            count_result = await session.execute(
+                select(func.count()).select_from(PlumberProspect).where(
+                    PlumberProspect.geocoded_at.is_(None),
+                    PlumberProspect.ville.is_not(None),
+                )
+            )
+            pending = count_result.scalar() or 0
+            if pending == 0:
+                return
+
+            logger.info(f"Auto-geocoding {pending} prospects in background...")
+            result = await session.execute(
+                select(PlumberProspect).where(PlumberProspect.geocoded_at.is_(None))
+            )
+            prospects = list(result.scalars().all())
+
+            geocoding_service = GeocodingService(session)
+            stats = await geocoding_service.geocode_prospects(prospects)
+            logger.info(f"Auto-geocoding done: {stats}")
+
+
+@router.get("/map", response_model=list[ProspectMapItem])
+async def get_prospects_map(
+    background_tasks: BackgroundTasks,
+    departement: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_admin_user),
+):
+    """Get geocoded prospects for map display. Auto-geocodes pending prospects in background."""
+    from sqlalchemy import select, func
+
+    # Check if there are un-geocoded prospects and trigger background geocoding
+    count_result = await session.execute(
+        select(func.count()).select_from(PlumberProspect).where(
+            PlumberProspect.geocoded_at.is_(None),
+            PlumberProspect.ville.is_not(None),
+        )
+    )
+    pending = count_result.scalar() or 0
+    if pending > 0:
+        background_tasks.add_task(_run_geocoding_background)
+
+    # Return already-geocoded prospects
+    query = select(PlumberProspect).where(
+        PlumberProspect.latitude.is_not(None),
+        PlumberProspect.longitude.is_not(None),
+    )
+
+    if departement:
+        query = query.where(PlumberProspect.departement == departement)
+
+    result = await session.execute(query)
+    prospects = result.scalars().all()
+
+    items = []
+    for p in prospects:
+        name = (
+            p.raison_sociale
+            or " ".join(filter(None, [p.prenom_dirigeant, p.nom_dirigeant]))
+            or "Sans nom"
+        )
+        items.append(
+            ProspectMapItem(
+                id=p.id,
+                lat=p.latitude,
+                lng=p.longitude,
+                name=name,
+                departement=p.departement,
+                contact_status=p.contact_status,
+                individuel=p.individuel,
+                telephone=p.telephone,
+                email=p.email,
+                ville=p.ville,
+            )
+        )
+
+    return items
 
 
 @router.get("/{prospect_id}", response_model=ProspectResponse)

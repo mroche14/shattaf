@@ -56,6 +56,10 @@ class ProspectResponse(ProspectBase):
     provenance: Optional[str] = None
     sources: Optional[str] = None
 
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    geocoded_at: Optional[datetime] = None
+
     contact_status: ContactStatus
     contact_notes: Optional[str] = None
     last_contacted_at: Optional[datetime] = None
@@ -92,6 +96,17 @@ class ProspectFilters(BaseModel):
     limit: int = 50
 
 
+class ProspectBreakdown(ProspectBase):
+    """Cross-tabulation of type × contact info."""
+
+    individuels_with_phone: int = 0
+    individuels_with_email: int = 0
+    societes_with_phone: int = 0
+    societes_with_email: int = 0
+    unknown_with_phone: int = 0
+    unknown_with_email: int = 0
+
+
 class ProspectStats(ProspectBase):
     """Statistics for prospects."""
 
@@ -102,6 +117,7 @@ class ProspectStats(ProspectBase):
     by_departement: dict[str, int]
     individuels: int
     societes: int
+    breakdown: ProspectBreakdown = ProspectBreakdown()
 
 
 class ProspectListResponse(ProspectBase):
@@ -121,3 +137,26 @@ class ImportResult(BaseModel):
     created: int
     updated: int
     errors: List[str]
+
+
+class ProspectMapItem(ProspectBase):
+    """Lightweight prospect data for map display."""
+
+    id: UUID
+    lat: float
+    lng: float
+    name: str
+    departement: Optional[str] = None
+    contact_status: ContactStatus
+    individuel: Optional[bool] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    ville: Optional[str] = None
+
+
+class GeocodeResult(BaseModel):
+    """Result of batch geocoding."""
+
+    geocoded: int
+    failed: int
+    skipped: int

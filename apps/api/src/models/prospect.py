@@ -62,6 +62,11 @@ class PlumberProspect(BaseModel, table=True):
     date_extraction: Optional[str] = None
     source: Optional[str] = None
 
+    # Geocoding
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    geocoded_at: Optional[datetime] = None
+
     # Contact tracking
     contact_status: ContactStatus = Field(default=ContactStatus.NOT_CONTACTED, index=True)
     contact_notes: Optional[str] = Field(default=None, sa_column=Column(Text))

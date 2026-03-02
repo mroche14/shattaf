@@ -57,7 +57,7 @@ if command -v docker &> /dev/null; then
     # Check if container is running
     if ! docker ps --format '{{.Names}}' | grep -q "shattaf-db"; then
         echo -e "${YELLOW}  Starting PostgreSQL container...${NC}"
-        docker compose up -d db 2>/dev/null || docker-compose up -d db 2>/dev/null
+        docker compose up -d db 2>/dev/null || docker-compose up -d db 2>/dev/null || true
         # Wait for PostgreSQL to be ready
         echo -n "  Waiting for PostgreSQL"
         for i in {1..30}; do
@@ -72,7 +72,7 @@ if command -v docker &> /dev/null; then
         echo -e "  ✓ PostgreSQL container running"
     fi
 else
-    echo -e "${YELLOW}  ⚠ Docker not found. Make sure PostgreSQL is running on localhost:5432${NC}"
+    echo -e "${YELLOW}  ⚠ Docker not found. Make sure PostgreSQL is running on localhost:5434${NC}"
 fi
 
 # ---------------------------------------------
@@ -106,7 +106,7 @@ echo -e "${YELLOW}[4/6] Checking database...${NC}"
 
 # Try to create database (ignore error if exists)
 if command -v createdb &> /dev/null; then
-    createdb -h localhost -U postgres shattaf 2>/dev/null && echo "  ✓ Database 'shattaf' created" || echo "  ✓ Database 'shattaf' already exists"
+    createdb -h localhost -p 5434 -U postgres shattaf 2>/dev/null && echo "  ✓ Database 'shattaf' created" || echo "  ✓ Database 'shattaf' already exists"
 else
     echo -e "${YELLOW}  ⚠ Cannot auto-create database. Make sure 'shattaf' database exists.${NC}"
     echo "    Run: createdb -U postgres shattaf"
@@ -150,7 +150,7 @@ mkdir -p "$PROJECT_ROOT/.logs"
 # Start API with uv
 echo -e "  ${CYAN}Starting API on http://localhost:8010${NC}"
 cd "$PROJECT_ROOT/apps/api"
-nohup uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8001 > "$PROJECT_ROOT/.logs/api.log" 2>&1 &
+nohup uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8010 > "$PROJECT_ROOT/.logs/api.log" 2>&1 &
 API_PID=$!
 echo "    PID: $API_PID"
 
@@ -160,17 +160,18 @@ sleep 2
 # Start frontends
 cd "$PROJECT_ROOT"
 echo -e "  ${CYAN}Starting web-client on http://localhost:3003${NC}"
-nohup pnpm --filter=web-client dev > "$PROJECT_ROOT/.logs/web-client.log" 2>&1 &
+PNPM_BIN="$(which pnpm)"
+nohup "$PNPM_BIN" --filter=web-client dev > "$PROJECT_ROOT/.logs/web-client.log" 2>&1 &
 CLIENT_PID=$!
 echo "    PID: $CLIENT_PID"
 
 echo -e "  ${CYAN}Starting web-pro on http://localhost:3001${NC}"
-nohup pnpm --filter=web-pro dev > "$PROJECT_ROOT/.logs/web-pro.log" 2>&1 &
+nohup "$PNPM_BIN" --filter=web-pro dev > "$PROJECT_ROOT/.logs/web-pro.log" 2>&1 &
 PRO_PID=$!
 echo "    PID: $PRO_PID"
 
 echo -e "  ${CYAN}Starting web-admin on http://localhost:3002${NC}"
-nohup pnpm --filter=web-admin dev > "$PROJECT_ROOT/.logs/web-admin.log" 2>&1 &
+nohup "$PNPM_BIN" --filter=web-admin dev > "$PROJECT_ROOT/.logs/web-admin.log" 2>&1 &
 ADMIN_PID=$!
 echo "    PID: $ADMIN_PID"
 

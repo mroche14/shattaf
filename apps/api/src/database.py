@@ -179,7 +179,7 @@ async def _seed_test_users() -> None:
                     await conn.execute(
                         text("""
                             INSERT INTO plumber_profiles (id, created_at, user_id, status, service_area_radius_km, total_jobs_completed, total_ratings, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, mandate_signed)
-                            VALUES (:id, :created_at, :user_id, 'active', 30.0, 0, 0, false, false, false, false)
+                            VALUES (:id, :created_at, :user_id, 'ACTIVE', 30.0, 0, 0, false, false, false, false)
                         """),
                         {"id": profile_id, "created_at": now, "user_id": user_id}
                     )
@@ -350,7 +350,7 @@ async def _seed_mock_data() -> None:
             print("✓ Seeded pricing config")
 
             # ==================== ADDITIONAL USERS ====================
-            # Locations in DOM-TOM and France métropolitaine
+            # Locations in DOM-TOM
             locations = {
                 "971": [  # Guadeloupe
                     {"city": "Pointe-à-Pitre", "postal": "97110", "lat": 16.2411, "lng": -61.5331},
@@ -370,57 +370,39 @@ async def _seed_mock_data() -> None:
                     {"city": "Kourou", "postal": "97310", "lat": 5.1561, "lng": -52.6500},
                     {"city": "Saint-Laurent-du-Maroni", "postal": "97320", "lat": 5.5000, "lng": -54.0333},
                 ],
-                "21": [  # Côte-d'Or
-                    {"city": "Dijon", "postal": "21000", "lat": 47.3220, "lng": 5.0415},
-                    {"city": "Beaune", "postal": "21200", "lat": 47.0260, "lng": 4.8400},
-                    {"city": "Chenôve", "postal": "21300", "lat": 47.2920, "lng": 5.0070},
-                ],
-                "32": [  # Gers
-                    {"city": "Auch", "postal": "32000", "lat": 43.6460, "lng": 0.5860},
-                    {"city": "Condom", "postal": "32100", "lat": 43.9590, "lng": 0.3730},
-                    {"city": "Fleurance", "postal": "32500", "lat": 43.8490, "lng": 0.6620},
-                ],
-                "53": [  # Mayenne
-                    {"city": "Laval", "postal": "53000", "lat": 48.0730, "lng": -0.7690},
-                    {"city": "Mayenne", "postal": "53100", "lat": 48.3020, "lng": -0.6150},
-                    {"city": "Château-Gontier", "postal": "53200", "lat": 47.8280, "lng": -0.7050},
-                ],
-                "68": [  # Haut-Rhin
-                    {"city": "Mulhouse", "postal": "68100", "lat": 47.7508, "lng": 7.3359},
-                    {"city": "Colmar", "postal": "68000", "lat": 48.0794, "lng": 7.3558},
-                    {"city": "Saint-Louis", "postal": "68300", "lat": 47.5900, "lng": 7.5650},
-                ],
             }
 
             # Create plumbers
             plumber_data = [
-                # DOM-TOM
+                # DOM-TOM — Guadeloupe (971)
                 ("Pierre", "Martin", "pierre.martin@plombier.gp", "0690100001", "971", "Plomberie Martin SARL", "123456789"),
                 ("Jacques", "Durand", "jacques.durand@plombier.gp", "0690100002", "971", "Durand & Fils", "234567890"),
+                ("Éric", "Larcher", "eric.larcher@plombier.gp", "0690100003", "971", "Larcher Plomberie", "345012789"),
+                ("Claude", "Neisson", "claude.neisson@plombier.gp", "0690100004", "971", "Neisson Services", "456012890"),
+                ("Thierry", "Guérin", "thierry.guerin@plombier.gp", "0690100005", "971", "Guérin & Fils", "567012901"),
+                # DOM-TOM — Martinique (972)
                 ("Marc", "Bernard", "marc.bernard@plombier.mq", "0696200001", "972", "MB Plomberie", "345678901"),
                 ("Paul", "Petit", "paul.petit@plombier.mq", "0696200002", "972", "Petit Plomberie", "456789012"),
+                ("Fabrice", "Césaire", "fabrice.cesaire@plombier.mq", "0696200003", "972", "Césaire Plomberie", "567890234"),
+                ("Olivier", "Glissant", "olivier.glissant@plombier.mq", "0696200004", "972", "Glissant Services", "678901345"),
+                # DOM-TOM — Guyane (973)
                 ("André", "Robert", "andre.robert@plombier.gf", "0694300001", "973", "Robert Services", "567890123"),
-                # Côte-d'Or (21)
-                ("François", "Lemaire", "francois.lemaire@plombier21.fr", "0380100001", "21", "Lemaire Plomberie", "211234567"),
-                ("Michel", "Dupont", "michel.dupont@plombier21.fr", "0380100002", "21", "Dupont & Fils Dijon", "212345678"),
-                # Gers (32)
-                ("Jean-Pierre", "Castaing", "jp.castaing@plombier32.fr", "0562100001", "32", "Castaing Plomberie Auch", "321234567"),
-                ("Luc", "Dufour", "luc.dufour@plombier32.fr", "0562100002", "32", "Dufour Services", "322345678"),
-                # Mayenne (53)
-                ("Yannick", "Leblanc", "yannick.leblanc@plombier53.fr", "0243100001", "53", "Leblanc Plomberie Laval", "531234567"),
-                ("Christophe", "Morin", "christophe.morin@plombier53.fr", "0243100002", "53", "Morin Chauffage Plomberie", "532345678"),
-                # Haut-Rhin (68)
-                ("Hans", "Muller", "hans.muller@plombier68.fr", "0389100001", "68", "Muller Sanitaire Mulhouse", "681234567"),
-                ("Patrick", "Weber", "patrick.weber@plombier68.fr", "0389100002", "68", "Weber Plomberie Colmar", "682345678"),
+                ("René", "Atipa", "rene.atipa@plombier.gf", "0694300002", "973", "Atipa Plomberie", "678901234"),
+                ("Daniel", "Taubira", "daniel.taubira@plombier.gf", "0694300003", "973", "Taubira & Fils", "789012345"),
             ]
 
             plumber_ids = []
             customer_ids = []
 
+            # Track index per department so each plumber gets a distinct location
+            dept_loc_index: dict[str, int] = {}
+
             for first, last, email, phone, dept, company, siren in plumber_data:
                 user_id = str(uuid4())
                 plumber_ids.append(user_id)
-                loc = random.choice(locations[dept])
+                idx = dept_loc_index.get(dept, 0)
+                loc = locations[dept][idx % len(locations[dept])]
+                dept_loc_index[dept] = idx + 1
 
                 await conn.execute(
                     text("""
@@ -443,7 +425,7 @@ async def _seed_mock_data() -> None:
                 await conn.execute(
                     text("""
                         INSERT INTO plumber_profiles (id, created_at, user_id, status, department, intervention_locations, company_name, siren, service_area_lat, service_area_lng, service_area_radius_km, total_jobs_completed, average_rating, total_ratings, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, mandate_signed)
-                        VALUES (:id, :created_at, :user_id, 'ACTIVE', :department, :intervention_locations, :company_name, :siren, :lat, :lng, 30.0, :jobs, :rating, :ratings, true, true, true, true)
+                        VALUES (:id, :created_at, :user_id, 'ACTIVE', :department, :intervention_locations, :company_name, :siren, :lat, :lng, :radius, :jobs, :rating, :ratings, true, true, true, true)
                     """),
                     {
                         "id": profile_id,
@@ -455,6 +437,7 @@ async def _seed_mock_data() -> None:
                         "siren": siren,
                         "lat": loc["lat"],
                         "lng": loc["lng"],
+                        "radius": random.choice([8, 10, 12, 15, 20]),
                         "jobs": random.randint(10, 50),
                         "rating": round(random.uniform(4.0, 5.0), 1),
                         "ratings": random.randint(5, 30),
@@ -709,7 +692,17 @@ async def _auto_import_prospects() -> None:
             result = await conn.execute(text("SELECT COUNT(*) FROM plumber_prospects"))
             count = result.scalar() or 0
             if count > 0:
-                print(f"✓ Prospects already loaded ({count} records)")
+                # Check if any need geocoding
+                ungeo = await conn.execute(text(
+                    "SELECT COUNT(*) FROM plumber_prospects "
+                    "WHERE geocoded_at IS NULL AND ville IS NOT NULL"
+                ))
+                pending = ungeo.scalar() or 0
+                if pending > 0:
+                    print(f"✓ Prospects already loaded ({count} records, {pending} need geocoding)")
+                    await _geocode_all_prospects()
+                else:
+                    print(f"✓ Prospects already loaded ({count} records, all geocoded)")
                 return
         except Exception:
             pass  # Table might not exist yet, continue
@@ -782,7 +775,7 @@ async def _auto_import_prospects() -> None:
                 'sources': row.get('sources', '').strip() or None,
                 'date_extraction': row.get('date_extraction', '').strip() or None,
                 'source': row.get('source', '').strip() or None,
-                'contact_status': 'not_contacted',
+                'contact_status': 'NOT_CONTACTED',
             })
 
         # Batch insert using raw SQL
@@ -808,8 +801,41 @@ async def _auto_import_prospects() -> None:
                 )
             print(f"✓ Auto-imported {len(rows_to_insert)} prospects from {csv_path.name}")
 
+            # Geocode all imported prospects so they appear on the map immediately
+            await _geocode_all_prospects()
+
     except Exception as e:
         print(f"⚠ Failed to auto-import prospects: {e}")
+
+
+async def _geocode_all_prospects() -> None:
+    """Geocode all un-geocoded prospects using the BAN API.
+
+    Runs synchronously during startup so the map is immediately populated.
+    """
+    from .models.prospect import PlumberProspect
+    from .services.geocoding import GeocodingService
+
+    try:
+        async with async_session_factory() as session:
+            result = await session.execute(
+                select(PlumberProspect).where(
+                    PlumberProspect.geocoded_at.is_(None),
+                    PlumberProspect.ville.is_not(None),
+                )
+            )
+            prospects = list(result.scalars().all())
+
+            if not prospects:
+                return
+
+            print(f"  Geocoding {len(prospects)} prospects via BAN API...", flush=True)
+            geocoding_service = GeocodingService(session)
+            stats = await geocoding_service.geocode_prospects(prospects)
+            print(f"✓ Geocoding complete: {stats['geocoded']} geocoded, {stats['failed']} failed, {stats['skipped']} skipped", flush=True)
+
+    except Exception as e:
+        print(f"⚠ Geocoding failed (prospects will be geocoded on first map request): {e}")
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

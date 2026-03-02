@@ -1,11 +1,38 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import L from 'leaflet';
-import { Map, Filter, Users, MapPin, AlertCircle, Info } from 'lucide-react';
-import { adminApi, PlumberLocation, BookingLocation } from '../../api/client';
+import { Map, Filter, Users, MapPin, AlertCircle, UserPlus, Crosshair, RotateCcw, Search, Loader2 } from 'lucide-react';
+import { adminApi, PlumberLocation, BookingLocation, ProspectMapItem, PlumberScoreItem } from '../../api/client';
 
 // Ensure Leaflet CSS is loaded
 import 'leaflet/dist/leaflet.css';
+
+// Haversine distance in km between two lat/lng points
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Prospect with computed distance from simulation point
+interface NearbyProspect {
+  prospect: ProspectMapItem;
+  distance_km: number;
+}
+
+// Debounce hook for slider values
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
 
 // Department centers
 const DEPARTMENTS = {
@@ -50,29 +77,75 @@ const createInterventionIcon = () => new L.Icon({
   popupAnchor: [0, -5],
 });
 
+const createProspectIcon = () => new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="12" height="12">
+      <circle cx="6" cy="6" r="5" fill="#f97316" stroke="#fff" stroke-width="1"/>
+    </svg>
+  `),
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  popupAnchor: [0, -6],
+});
+
+const createSimulationIcon = () => new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+      <circle cx="12" cy="12" r="10" fill="#ec4899" fill-opacity="0.3" stroke="#ec4899" stroke-width="2">
+        <animate attributeName="r" values="8;10;8" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="fill-opacity" values="0.3;0.1;0.3" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="12" cy="12" r="4" fill="#ec4899" stroke="#fff" stroke-width="1.5"/>
+      <line x1="12" y1="2" x2="12" y2="6" stroke="#ec4899" stroke-width="1.5"/>
+      <line x1="12" y1="18" x2="12" y2="22" stroke="#ec4899" stroke-width="1.5"/>
+      <line x1="2" y1="12" x2="6" y2="12" stroke="#ec4899" stroke-width="1.5"/>
+      <line x1="18" y1="12" x2="22" y2="12" stroke="#ec4899" stroke-width="1.5"/>
+    </svg>
+  `),
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
+});
+
 // Map component using vanilla Leaflet
 interface CoverageMapProps {
   mapConfig: { center: [number, number]; zoom: number };
   plumbers: PlumberLocation[] | undefined;
   bookings: BookingLocation[] | undefined;
+  prospects: ProspectMapItem[] | undefined;
   showPlumbers: boolean;
   showBookings: boolean;
   showServiceAreas: boolean;
   showInterventions: boolean;
+  showProspects: boolean;
+  simulationMode: boolean;
+  simulationPoint: { lat: number; lng: number } | null;
+  simulationResults: PlumberScoreItem[] | undefined;
+  onMapClick: (lat: number, lng: number) => void;
 }
 
 const CoverageMap: React.FC<CoverageMapProps> = ({
   mapConfig,
   plumbers,
   bookings,
+  prospects,
   showPlumbers,
   showBookings,
   showServiceAreas,
   showInterventions,
+  showProspects,
+  simulationMode,
+  simulationPoint,
+  simulationResults,
+  onMapClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
+  const simulationLayerRef = useRef<L.LayerGroup | null>(null);
+  // Stable ref for the click handler to avoid stale closures
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
 
   // Initialize map
   useEffect(() => {
@@ -90,15 +163,32 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
 
     mapRef.current = map;
     markersRef.current = L.layerGroup().addTo(map);
+    simulationLayerRef.current = L.layerGroup().addTo(map);
+
+    // Click handler uses ref to always get fresh callback
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      onMapClickRef.current(e.latlng.lat, e.latlng.lng);
+    });
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
         markersRef.current = null;
+        simulationLayerRef.current = null;
       }
     };
   }, []);
+
+  // Toggle crosshair cursor when simulation mode changes
+  useEffect(() => {
+    if (!containerRef.current) return;
+    if (simulationMode) {
+      containerRef.current.style.cursor = 'crosshair';
+    } else {
+      containerRef.current.style.cursor = '';
+    }
+  }, [simulationMode]);
 
   // Update map view when config changes
   useEffect(() => {
@@ -117,6 +207,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
     const plumberIcon = createPlumberIcon();
     const bookingIcon = createBookingIcon();
     const interventionIcon = createInterventionIcon();
+    const prospectIcon = createProspectIcon();
 
     // Add plumber markers and service areas
     if (showPlumbers && plumbers) {
@@ -188,7 +279,77 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
         }
       });
     }
-  }, [plumbers, bookings, showPlumbers, showBookings, showServiceAreas, showInterventions]);
+    // Add prospect markers
+    if (showProspects && prospects) {
+      const STATUS_LABELS: Record<string, string> = {
+        not_contacted: 'Non contacté',
+        contacted: 'Contacté',
+        interested: 'Intéressé',
+        not_interested: 'Non intéressé',
+        registered: 'Inscrit',
+      };
+      prospects.forEach((prospect) => {
+        const marker = L.marker([prospect.lat, prospect.lng], { icon: prospectIcon });
+        marker.bindPopup(`
+          <div style="min-width: 180px;">
+            <h3 style="font-weight: bold; font-size: 1.1em; margin-bottom: 4px;">${prospect.name}</h3>
+            ${prospect.ville ? `<p style="color: #6b7280; font-size: 0.9em; margin: 2px 0;">${prospect.ville}</p>` : ''}
+            ${prospect.telephone ? `<p style="color: #6b7280; font-size: 0.9em; margin: 2px 0;">Tel: ${prospect.telephone}</p>` : ''}
+            <p style="color: #6b7280; font-size: 0.9em; margin: 2px 0;">
+              Statut: <span style="color: #f97316;">${STATUS_LABELS[prospect.contactStatus] || prospect.contactStatus}</span>
+            </p>
+            <p style="color: #6b7280; font-size: 0.85em; margin: 2px 0;">${prospect.individuel ? 'Indépendant' : 'Société'}</p>
+          </div>
+        `);
+        marker.addTo(markersRef.current!);
+      });
+    }
+  }, [plumbers, bookings, prospects, showPlumbers, showBookings, showServiceAreas, showInterventions, showProspects]);
+
+  // Update simulation overlay (separate layer so it doesn't flicker with data markers)
+  useEffect(() => {
+    if (!simulationLayerRef.current) return;
+    simulationLayerRef.current.clearLayers();
+
+    if (!simulationMode || !simulationPoint) return;
+
+    // Simulation point marker with popup
+    const simIcon = createSimulationIcon();
+    const simMarker = L.marker([simulationPoint.lat, simulationPoint.lng], { icon: simIcon });
+    simMarker.bindPopup(`
+      <div style="min-width: 140px;">
+        <h4 style="font-weight: bold; font-size: 1em; color: #ec4899; margin-bottom: 4px;">Point de simulation</h4>
+        <p style="color: #6b7280; font-size: 0.85em; margin: 0;">${simulationPoint.lat.toFixed(4)}, ${simulationPoint.lng.toFixed(4)}</p>
+        ${simulationResults ? `<p style="color: #6b7280; font-size: 0.85em; margin: 2px 0 0;">${simulationResults.length} plombier(s) trouvé(s)</p>` : ''}
+      </div>
+    `);
+    simMarker.addTo(simulationLayerRef.current);
+
+    // Dashed lines from each matched plumber to the simulation point
+    if (simulationResults && simulationResults.length > 0) {
+      simulationResults.forEach((result) => {
+        const opacity = Math.max(0.15, 0.7 - (result.rank - 1) * 0.1);
+        const line = L.polyline(
+          [
+            [result.lat, result.lng],
+            [simulationPoint.lat, simulationPoint.lng],
+          ],
+          {
+            color: '#ec4899',
+            weight: 2,
+            dashArray: '5, 10',
+            opacity,
+          }
+        );
+        line.bindTooltip(`#${result.rank} ${result.name} — ${result.distance_km.toFixed(1)} km`, {
+          permanent: false,
+          direction: 'center',
+          className: 'leaflet-tooltip-sim',
+        });
+        line.addTo(simulationLayerRef.current!);
+      });
+    }
+  }, [simulationMode, simulationPoint, simulationResults]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 };
@@ -199,6 +360,22 @@ const CoveragePage: React.FC = () => {
   const [showBookings, setShowBookings] = useState(true);
   const [showServiceAreas, setShowServiceAreas] = useState(true);
   const [showInterventions, setShowInterventions] = useState(true);
+  const [showProspects, setShowProspects] = useState(false);
+
+  // Prospect filter states
+  const [prospectType, setProspectType] = useState<string>('all');
+  const [prospectStatus, setProspectStatus] = useState<string>('all');
+  const [prospectHasPhone, setProspectHasPhone] = useState(false);
+  const [prospectHasEmail, setProspectHasEmail] = useState(false);
+
+  // Simulation state
+  const [simulationMode, setSimulationMode] = useState(false);
+  const [simulationPoint, setSimulationPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [simulationLabel, setSimulationLabel] = useState<string>('');
+  const [weights, setWeights] = useState({ proximity: 40, quality: 35, load: 25 });
+
+  // Debounce simulation params so sliders don't spam API calls
+  const debouncedWeights = useDebounce(weights, 300);
 
   const { data: plumbers } = useQuery({
     queryKey: ['coveragePlumbers', selectedDepartment],
@@ -210,16 +387,83 @@ const CoveragePage: React.FC = () => {
     queryFn: () => adminApi.coverage.getBookingLocations(selectedDepartment),
   });
 
+  const { data: prospects } = useQuery({
+    queryKey: ['coverageProspects', selectedDepartment],
+    queryFn: () => adminApi.prospects.getMap(selectedDepartment),
+    enabled: showProspects,
+  });
+
   const { data: coverageStats } = useQuery({
     queryKey: ['coverageStats'],
     queryFn: () => adminApi.coverage.getCoverageStats(),
   });
+
+  const { data: simulationResult, isLoading: simLoading, isFetching: simFetching } = useQuery({
+    queryKey: ['matchingSimulation', simulationPoint, debouncedWeights, selectedDepartment],
+    queryFn: () => adminApi.matching.simulatePoint({
+      lat: simulationPoint!.lat,
+      lng: simulationPoint!.lng,
+      department: selectedDepartment,
+      weights: debouncedWeights,
+    }),
+    enabled: simulationMode && !!simulationPoint,
+    placeholderData: keepPreviousData,
+  });
+
+  const geocodeMutation = useMutation({
+    mutationFn: (address: string) => adminApi.matching.geocodeAddress(address, selectedDepartment),
+    onSuccess: (data) => {
+      setSimulationPoint({ lat: data.lat, lng: data.lng });
+      setSimulationLabel(data.label);
+    },
+  });
+
+  const filteredProspects = useMemo(() => {
+    if (!prospects) return undefined;
+    return prospects.filter((p) => {
+      if (prospectType === 'independant' && p.individuel !== true) return false;
+      if (prospectType === 'societe' && p.individuel !== false) return false;
+      if (prospectStatus !== 'all' && p.contactStatus !== prospectStatus) return false;
+      if (prospectHasPhone && !p.telephone) return false;
+      if (prospectHasEmail && !p.email) return false;
+      return true;
+    });
+  }, [prospects, prospectType, prospectStatus, prospectHasPhone, prospectHasEmail]);
+
+  // Nearby prospects computed client-side from filtered prospects + simulation point
+  const nearbyProspects = useMemo<NearbyProspect[]>(() => {
+    if (!simulationMode || !simulationPoint || !filteredProspects) return [];
+    return filteredProspects
+      .map((prospect) => ({
+        prospect,
+        distance_km: haversineDistance(simulationPoint.lat, simulationPoint.lng, prospect.lat, prospect.lng),
+      }))
+      .sort((a, b) => a.distance_km - b.distance_km);
+  }, [simulationMode, simulationPoint, filteredProspects]);
 
   const mapConfig = DEPARTMENTS[selectedDepartment as keyof typeof DEPARTMENTS] || DEPARTMENTS['971'];
 
   const currentDeptStats = useMemo(() => {
     return coverageStats?.departments.find((d) => d.code === selectedDepartment);
   }, [coverageStats, selectedDepartment]);
+
+  const handleMapClick = useCallback((lat: number, lng: number) => {
+    if (simulationMode) {
+      setSimulationPoint({ lat, lng });
+      setSimulationLabel('');
+    }
+  }, [simulationMode]);
+
+  const toggleSimulation = useCallback(() => {
+    setSimulationMode((prev) => {
+      if (prev) {
+        // Turning off: clear the point and label
+        setSimulationPoint(null);
+        setSimulationLabel('');
+      }
+      return !prev;
+    });
+  }, []);
 
   return (
     <div className="h-full flex flex-col">
@@ -280,9 +524,70 @@ const CoveragePage: React.FC = () => {
                 icon={<MapPin className="w-4 h-4" />}
                 label="Interventions"
               />
+              <FilterToggle
+                active={showProspects}
+                onClick={() => setShowProspects(!showProspects)}
+                color="orange"
+                icon={<UserPlus className="w-4 h-4" />}
+                label="Prospects"
+              />
+              <FilterToggle
+                active={simulationMode}
+                onClick={toggleSimulation}
+                color="pink"
+                icon={<Crosshair className="w-4 h-4" />}
+                label="Simulation"
+              />
             </div>
           </div>
         </div>
+
+        {/* Prospect filters */}
+        {showProspects && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <select
+              value={prospectType}
+              onChange={(e) => setProspectType(e.target.value)}
+              className="rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-500 transition-colors"
+              style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+            >
+              <option value="all">Tous les types</option>
+              <option value="independant">Indépendants</option>
+              <option value="societe">Sociétés</option>
+            </select>
+            <select
+              value={prospectStatus}
+              onChange={(e) => setProspectStatus(e.target.value)}
+              className="rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-500 transition-colors"
+              style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="not_contacted">Non contacté</option>
+              <option value="contacted">Contacté</option>
+              <option value="interested">Intéressé</option>
+              <option value="not_interested">Non intéressé</option>
+              <option value="registered">Inscrit</option>
+            </select>
+            <label className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+              <input
+                type="checkbox"
+                checked={prospectHasPhone}
+                onChange={(e) => setProspectHasPhone(e.target.checked)}
+                className="accent-orange-500"
+              />
+              Avec téléphone
+            </label>
+            <label className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+              <input
+                type="checkbox"
+                checked={prospectHasEmail}
+                onChange={(e) => setProspectHasEmail(e.target.checked)}
+                className="accent-orange-500"
+              />
+              Avec email
+            </label>
+          </div>
+        )}
 
         {/* Stats bar */}
         {currentDeptStats && (
@@ -299,11 +604,9 @@ const CoveragePage: React.FC = () => {
               <p className="text-2xl font-bold text-emerald-400">{currentDeptStats.coverageScore}%</p>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Score couverture</p>
             </div>
-            <div className="stat-card p-3 flex items-center gap-2">
-              <Info className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {plumbers?.length || 0} sur la carte
-              </p>
+            <div className="stat-card p-3">
+              <p className="text-2xl font-bold text-orange-400">{filteredProspects?.length || 0}</p>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Prospects</p>
             </div>
           </div>
         )}
@@ -316,11 +619,54 @@ const CoveragePage: React.FC = () => {
           mapConfig={mapConfig}
           plumbers={plumbers}
           bookings={bookings}
+          prospects={filteredProspects}
           showPlumbers={showPlumbers}
           showBookings={showBookings}
           showServiceAreas={showServiceAreas}
           showInterventions={showInterventions}
+          showProspects={showProspects}
+          simulationMode={simulationMode}
+          simulationPoint={simulationPoint}
+          simulationResults={simulationResult?.results}
+          onMapClick={handleMapClick}
         />
+
+        {/* Simulation results panel */}
+        {simulationMode && (
+          <SimulationPanel
+            point={simulationPoint}
+            label={simulationLabel}
+            results={simulationResult?.results}
+            loading={simLoading}
+            fetching={simFetching}
+            weights={weights}
+            onWeightsChange={setWeights}
+            onGeocode={(address) => geocodeMutation.mutate(address)}
+            geocoding={geocodeMutation.isPending}
+            geocodeError={geocodeMutation.error?.message}
+            // Map layer toggles
+            showPlumbers={showPlumbers}
+            onShowPlumbersChange={setShowPlumbers}
+            showBookings={showBookings}
+            onShowBookingsChange={setShowBookings}
+            showServiceAreas={showServiceAreas}
+            onShowServiceAreasChange={setShowServiceAreas}
+            showInterventions={showInterventions}
+            onShowInterventionsChange={setShowInterventions}
+            showProspects={showProspects}
+            onShowProspectsChange={setShowProspects}
+            // Prospect filters
+            prospectType={prospectType}
+            onProspectTypeChange={setProspectType}
+            prospectStatus={prospectStatus}
+            onProspectStatusChange={setProspectStatus}
+            prospectHasPhone={prospectHasPhone}
+            onProspectHasPhoneChange={setProspectHasPhone}
+            prospectHasEmail={prospectHasEmail}
+            onProspectHasEmailChange={setProspectHasEmail}
+            nearbyProspects={nearbyProspects}
+          />
+        )}
 
         {/* Legend */}
         <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur border border-gray-200 rounded-xl p-4 z-[1000] shadow-lg">
@@ -338,17 +684,33 @@ const CoveragePage: React.FC = () => {
               <div className="w-2 h-2 rounded-full bg-green-500 border border-white shadow" />
               <span className="text-gray-600">Interventions</span>
             </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-orange-500 border border-white shadow" />
+              <span className="text-gray-600">Prospects</span>
+            </div>
             {showServiceAreas && (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-500/20" />
                 <span className="text-gray-600">Zone de service</span>
               </div>
             )}
+            {simulationMode && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-pink-500 border border-white shadow" />
+                  <span className="text-gray-600">Point de simulation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-0 border-t-2 border-dashed border-pink-500" />
+                  <span className="text-gray-600">Liaison matching</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* No data warning */}
-        {(!plumbers || plumbers.length === 0) && (!bookings || bookings.length === 0) && (
+        {(!plumbers || plumbers.length === 0) && (!bookings || bookings.length === 0) && (!filteredProspects || filteredProspects.length === 0) && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 backdrop-blur border border-gray-200 rounded-xl p-6 z-[1000] text-center shadow-lg">
             <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
             <h3 className="font-bold text-lg text-gray-800">Aucune donnée</h3>
@@ -361,6 +723,430 @@ const CoveragePage: React.FC = () => {
     </div>
   );
 };
+
+// ============== Simulation Results Panel ==============
+
+interface SimulationPanelProps {
+  point: { lat: number; lng: number } | null;
+  label: string;
+  results: PlumberScoreItem[] | undefined;
+  loading: boolean;
+  fetching: boolean;
+  weights: { proximity: number; quality: number; load: number };
+  onWeightsChange: (w: { proximity: number; quality: number; load: number }) => void;
+  onGeocode: (address: string) => void;
+  geocoding: boolean;
+  geocodeError?: string;
+  // Map layer toggles
+  showPlumbers: boolean;
+  onShowPlumbersChange: (v: boolean) => void;
+  showBookings: boolean;
+  onShowBookingsChange: (v: boolean) => void;
+  showServiceAreas: boolean;
+  onShowServiceAreasChange: (v: boolean) => void;
+  showInterventions: boolean;
+  onShowInterventionsChange: (v: boolean) => void;
+  showProspects: boolean;
+  onShowProspectsChange: (v: boolean) => void;
+  // Prospect filters
+  prospectType: string;
+  onProspectTypeChange: (v: string) => void;
+  prospectStatus: string;
+  onProspectStatusChange: (v: string) => void;
+  prospectHasPhone: boolean;
+  onProspectHasPhoneChange: (v: boolean) => void;
+  prospectHasEmail: boolean;
+  onProspectHasEmailChange: (v: boolean) => void;
+  nearbyProspects: NearbyProspect[];
+}
+
+const SimulationPanel: React.FC<SimulationPanelProps> = ({
+  point,
+  label,
+  results,
+  loading,
+  fetching,
+  weights,
+  onWeightsChange,
+  onGeocode,
+  geocoding,
+  geocodeError,
+  showPlumbers,
+  onShowPlumbersChange,
+  showBookings,
+  onShowBookingsChange,
+  showServiceAreas,
+  onShowServiceAreasChange,
+  showInterventions,
+  onShowInterventionsChange,
+  showProspects,
+  onShowProspectsChange,
+  prospectType,
+  onProspectTypeChange,
+  prospectStatus,
+  onProspectStatusChange,
+  prospectHasPhone,
+  onProspectHasPhoneChange,
+  prospectHasEmail,
+  onProspectHasEmailChange,
+  nearbyProspects,
+}) => {
+  const [addressInput, setAddressInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'plumbers' | 'prospects'>('plumbers');
+
+  const RANK_COLORS: Record<number, string> = {
+    1: 'bg-yellow-400 text-yellow-900',
+    2: 'bg-gray-300 text-gray-700',
+    3: 'bg-amber-600 text-amber-100',
+  };
+
+  const handleAddressSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (addressInput.trim()) {
+      onGeocode(addressInput.trim());
+    }
+  };
+
+  return (
+    <div className="absolute top-4 right-4 w-80 z-[1000] bg-white/95 backdrop-blur border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-[calc(100%-2rem)] flex flex-col">
+      {/* Header */}
+      <div className="p-3 border-b border-gray-100">
+        <h4 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
+          <Crosshair className="w-4 h-4 text-pink-500" />
+          Simulation matching
+        </h4>
+
+        {/* Address search */}
+        <form onSubmit={handleAddressSubmit} className="mt-2 flex gap-1.5">
+          <input
+            type="text"
+            placeholder="Rechercher une adresse..."
+            value={addressInput}
+            onChange={(e) => setAddressInput(e.target.value)}
+            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-800 placeholder-gray-400 outline-none focus:border-pink-400 transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={geocoding || !addressInput.trim()}
+            className="px-2 py-1.5 rounded-lg bg-pink-500 text-white text-xs hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {geocoding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+          </button>
+        </form>
+        {geocodeError && (
+          <p className="text-xs text-red-500 mt-1">{geocodeError}</p>
+        )}
+
+        {/* Point info */}
+        {point && (
+          <div className="mt-2">
+            {label && (
+              <p className="text-xs text-gray-700 font-medium truncate">{label}</p>
+            )}
+            <p className="text-xs text-gray-400">
+              {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
+            </p>
+            {(results || nearbyProspects.length > 0) && (
+              <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                {results?.length || 0} plombier{(results?.length || 0) > 1 ? 's' : ''}
+                {showProspects && <>, {nearbyProspects.length} prospect{nearbyProspects.length > 1 ? 's' : ''}</>}
+                {fetching && <Loader2 className="w-3 h-3 animate-spin text-pink-400" />}
+              </p>
+            )}
+          </div>
+        )}
+        {!point && (
+          <p className="text-xs text-gray-400 mt-2">
+            Recherchez une adresse ou cliquez sur la carte
+          </p>
+        )}
+      </div>
+
+      {/* Map layers */}
+      <div className="p-3 border-b border-gray-100">
+        <span className="text-xs font-medium text-gray-600">Calques</span>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          <MiniToggle active={showPlumbers} onClick={() => onShowPlumbersChange(!showPlumbers)} color="#6366f1" label="Plombiers" />
+          <MiniToggle active={showBookings} onClick={() => onShowBookingsChange(!showBookings)} color="#06b6d4" label="Réservations" />
+          <MiniToggle active={showServiceAreas} onClick={() => onShowServiceAreasChange(!showServiceAreas)} color="#f59e0b" label="Zones" />
+          <MiniToggle active={showInterventions} onClick={() => onShowInterventionsChange(!showInterventions)} color="#22c55e" label="Interventions" />
+          <MiniToggle active={showProspects} onClick={() => onShowProspectsChange(!showProspects)} color="#f97316" label="Prospects" />
+        </div>
+        {/* Prospect sub-filters */}
+        {showProspects && (
+          <div className="mt-2 space-y-1.5">
+            <div className="flex gap-1.5">
+              <select
+                value={prospectType}
+                onChange={(e) => onProspectTypeChange(e.target.value)}
+                className="flex-1 rounded-md px-2 py-1 text-[11px] border border-gray-200 bg-white text-gray-700 outline-none"
+              >
+                <option value="all">Tous types</option>
+                <option value="independant">Indépendants</option>
+                <option value="societe">Sociétés</option>
+              </select>
+              <select
+                value={prospectStatus}
+                onChange={(e) => onProspectStatusChange(e.target.value)}
+                className="flex-1 rounded-md px-2 py-1 text-[11px] border border-gray-200 bg-white text-gray-700 outline-none"
+              >
+                <option value="all">Tous statuts</option>
+                <option value="not_contacted">Non contacté</option>
+                <option value="contacted">Contacté</option>
+                <option value="interested">Intéressé</option>
+                <option value="not_interested">Non intéressé</option>
+                <option value="registered">Inscrit</option>
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={prospectHasPhone}
+                  onChange={(e) => onProspectHasPhoneChange(e.target.checked)}
+                  className="accent-orange-500 w-3 h-3"
+                />
+                Avec téléphone
+              </label>
+              <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={prospectHasEmail}
+                  onChange={(e) => onProspectHasEmailChange(e.target.checked)}
+                  className="accent-orange-500 w-3 h-3"
+                />
+                Avec email
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Parameters */}
+      <div className="p-3 border-b border-gray-100 space-y-2">
+        {/* Weight sliders */}
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-gray-600">Pondération</span>
+          <button
+            onClick={() => onWeightsChange({ proximity: 40, quality: 35, load: 25 })}
+            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+          >
+            <RotateCcw className="w-3 h-3" />
+            Réinitialiser
+          </button>
+        </div>
+        <WeightSlider
+          label="Proximité"
+          value={weights.proximity}
+          onChange={(v) => onWeightsChange({ ...weights, proximity: v })}
+          color="bg-blue-500"
+        />
+        <WeightSlider
+          label="Qualité"
+          value={weights.quality}
+          onChange={(v) => onWeightsChange({ ...weights, quality: v })}
+          color="bg-amber-500"
+        />
+        <WeightSlider
+          label="Charge"
+          value={weights.load}
+          onChange={(v) => onWeightsChange({ ...weights, load: v })}
+          color="bg-green-500"
+        />
+      </div>
+
+      {/* Tab bar */}
+      {point && (
+        <div className="flex border-b border-gray-100">
+          <button
+            onClick={() => setActiveTab('plumbers')}
+            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+              activeTab === 'plumbers'
+                ? 'text-pink-600 border-b-2 border-pink-500 bg-pink-50/50'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Plombiers {results ? `(${results.length})` : ''}
+          </button>
+          <button
+            onClick={() => setActiveTab('prospects')}
+            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+              activeTab === 'prospects'
+                ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Prospects ({nearbyProspects.length})
+          </button>
+        </div>
+      )}
+
+      {/* Results list */}
+      <div className="flex-1 overflow-y-auto">
+        {!point ? (
+          <div className="p-6 text-center">
+            <Crosshair className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">En attente d'un point...</p>
+          </div>
+        ) : activeTab === 'plumbers' ? (
+          /* Plumber results tab */
+          loading && !results ? (
+            <div className="p-6 text-center">
+              <div className="animate-spin w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full mx-auto" />
+              <p className="text-xs text-gray-400 mt-2">Calcul en cours...</p>
+            </div>
+          ) : results && results.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {results.map((r) => (
+                <div key={r.plumber_id} className="p-3 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-2">
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
+                      RANK_COLORS[r.rank] || 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.rank}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm text-gray-800 truncate">{r.name}</span>
+                        <span className="text-sm font-bold text-pink-600 ml-2 flex-shrink-0">
+                          {r.total_score.toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                        <span>{r.distance_km.toFixed(1)} km</span>
+                        <span>{r.average_rating ? `${r.average_rating.toFixed(1)}★` : 'N/A'} ({r.total_ratings})</span>
+                        <span>{r.total_jobs_completed} jobs</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <ScoreBar value={r.proximity_score} color="bg-blue-500" label="P" />
+                        <ScoreBar value={r.quality_score} color="bg-amber-500" label="Q" />
+                        <ScoreBar value={r.load_score} color="bg-green-500" label="C" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center">
+              <AlertCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Aucun plombier dans cette zone</p>
+            </div>
+          )
+        ) : (
+          /* Prospects tab */
+          nearbyProspects.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {nearbyProspects.map((np, i) => (
+                <div key={np.prospect.id} className="p-3 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 bg-orange-100 text-orange-600">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm text-gray-800 truncate">{np.prospect.name}</span>
+                        <span className="text-xs font-medium text-orange-500 ml-2 flex-shrink-0">
+                          {np.distance_km.toFixed(1)} km
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                        {np.prospect.ville && <span>{np.prospect.ville}</span>}
+                        <span>{np.prospect.individuel ? 'Indépendant' : 'Société'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {np.prospect.telephone && (
+                          <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                            {np.prospect.telephone}
+                          </span>
+                        )}
+                        {np.prospect.email && (
+                          <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded truncate max-w-[140px]">
+                            {np.prospect.email}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center">
+              <UserPlus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">
+                {showProspects ? 'Aucun prospect dans cette zone' : 'Activez le calque Prospects'}
+              </p>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============== Sub-components ==============
+
+const MiniToggle: React.FC<{ active: boolean; onClick: () => void; color: string; label: string }> = ({
+  active, onClick, color, label,
+}) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] border transition-all ${
+      active
+        ? 'border-current font-medium'
+        : 'border-gray-200 text-gray-400'
+    }`}
+    style={active ? { color, backgroundColor: `${color}15` } : undefined}
+  >
+    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: active ? color : '#d1d5db' }} />
+    {label}
+  </button>
+);
+
+const SLIDER_COLORS: Record<string, string> = {
+  'bg-blue-500': '#3b82f6',
+  'bg-amber-500': '#f59e0b',
+  'bg-green-500': '#22c55e',
+};
+
+const WeightSlider: React.FC<{
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  color: string;
+}> = ({ label, value, onChange, color }) => {
+  const hex = SLIDER_COLORS[color] || '#3b82f6';
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-500 w-16">{label}</span>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+        style={{
+          background: `linear-gradient(to right, ${hex} ${value}%, #e5e7eb ${value}%)`,
+        }}
+      />
+      <span className="text-xs text-gray-500 w-7 text-right">{value}</span>
+    </div>
+  );
+};
+
+const ScoreBar: React.FC<{ value: number; color: string; label: string }> = ({ value, color, label }) => (
+  <div className="flex items-center gap-0.5 flex-1">
+    <span className="text-[10px] text-gray-400 w-3">{label}</span>
+    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div
+        className={`h-full rounded-full ${color}`}
+        style={{ width: `${value}%` }}
+      />
+    </div>
+  </div>
+);
 
 interface FilterToggleProps {
   active: boolean;
@@ -377,6 +1163,8 @@ const FilterToggle: React.FC<FilterToggleProps> = ({ active, onClick, color, ico
     emerald: 'bg-emerald-500/20 border-emerald-500 text-emerald-300',
     amber: 'bg-amber-500/20 border-amber-500 text-amber-300',
     green: 'bg-green-500/20 border-green-500 text-green-300',
+    orange: 'bg-orange-500/20 border-orange-500 text-orange-300',
+    pink: 'bg-pink-500/20 border-pink-500 text-pink-300',
   };
 
   return (

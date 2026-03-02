@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Wrench,
@@ -30,7 +30,9 @@ const STATUS_CONFIG: Record<string, { label: string; class: string }> = {
 type TabType = 'registered' | 'prospects';
 
 const PlumbersPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('registered');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl === 'prospects' ? 'prospects' : 'registered');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('');

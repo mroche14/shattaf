@@ -14,6 +14,7 @@ from ..models.plumber import PlumberProfile
 from ..schemas.prospect import (
     ProspectFilters,
     ProspectStats,
+    ProspectBreakdown,
     ImportResult,
 )
 from ..utils.db import uuid_column_eq
@@ -151,6 +152,25 @@ class ProspectService:
         )
         societes = societes_result.scalar() or 0
 
+        # Cross-tabulation: type × contact availability
+        has_phone = [PlumberProspect.telephone.isnot(None), PlumberProspect.telephone != ""]
+        has_email_cond = [PlumberProspect.email.isnot(None), PlumberProspect.email != ""]
+
+        async def _count(*conditions):
+            r = await self.session.execute(
+                select(func.count(PlumberProspect.id)).where(*conditions)
+            )
+            return r.scalar() or 0
+
+        breakdown = ProspectBreakdown(
+            individuels_with_phone=await _count(PlumberProspect.individuel == True, *has_phone),
+            individuels_with_email=await _count(PlumberProspect.individuel == True, *has_email_cond),
+            societes_with_phone=await _count(PlumberProspect.individuel == False, *has_phone),
+            societes_with_email=await _count(PlumberProspect.individuel == False, *has_email_cond),
+            unknown_with_phone=await _count(PlumberProspect.individuel.is_(None), *has_phone),
+            unknown_with_email=await _count(PlumberProspect.individuel.is_(None), *has_email_cond),
+        )
+
         return ProspectStats(
             total=total,
             with_telephone=with_telephone,
@@ -159,6 +179,7 @@ class ProspectService:
             by_departement=by_departement,
             individuels=individuels,
             societes=societes,
+            breakdown=breakdown,
         )
 
     async def update_prospect(

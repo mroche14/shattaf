@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
@@ -53,13 +54,24 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
 const ProspectsList: React.FC = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
+
+  // Read initial filter values from URL query params (e.g. from Dashboard segment cards)
+  const initialType = searchParams.get('individuel') === 'true'
+    ? 'individual' as const
+    : searchParams.get('individuel') === 'false'
+      ? 'company' as const
+      : 'all' as const;
+  const initialHasPhone = searchParams.get('hasTelephone') === 'true';
+  const initialHasEmail = searchParams.get('hasEmail') === 'true';
 
   // Filters
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'company'>('all');
-  const [hasPhoneFilter, setHasPhoneFilter] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'company'>(initialType);
+  const [hasPhoneFilter, setHasPhoneFilter] = useState(initialHasPhone);
+  const [hasEmailFilter, setHasEmailFilter] = useState(initialHasEmail);
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
 
@@ -80,6 +92,7 @@ const ProspectsList: React.FC = () => {
     ...(typeFilter === 'individual' && { individuel: true }),
     ...(typeFilter === 'company' && { individuel: false }),
     ...(hasPhoneFilter && { hasTelephone: true }),
+    ...(hasEmailFilter && { hasEmail: true }),
   };
 
   const { data, isLoading } = useQuery({
@@ -110,6 +123,7 @@ const ProspectsList: React.FC = () => {
       alert(`${result.updated} prospects mis à jour`);
     },
   });
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -242,6 +256,20 @@ const ProspectsList: React.FC = () => {
           />
           <Phone className="w-4 h-4 text-emerald-400" />
           <span className="text-sm">Avec téléphone</span>
+        </label>
+
+        <label className="flex items-center gap-2 rounded-xl px-4 py-2.5 cursor-pointer hover:border-indigo-500 transition-colors" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+          <input
+            type="checkbox"
+            checked={hasEmailFilter}
+            onChange={(e) => {
+              setHasEmailFilter(e.target.checked);
+              setPage(1);
+            }}
+            className="w-4 h-4 rounded bg-[var(--bg-surface)] border-[var(--border-color)]"
+          />
+          <Mail className="w-4 h-4 text-blue-400" />
+          <span className="text-sm">Avec email</span>
         </label>
 
         <div className="relative">
