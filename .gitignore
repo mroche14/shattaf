@@ -43,4 +43,5 @@ Thumbs.db
 *.sqlite3
 
 # Misc
-118712-fresh.png
+# Screenshots / debug images in root
+/*.png
