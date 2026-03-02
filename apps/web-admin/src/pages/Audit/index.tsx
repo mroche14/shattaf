@@ -21,7 +21,7 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
   product: <Package className="w-4 h-4" />,
   booking: <ClipboardList className="w-4 h-4" />,
   order: <Package className="w-4 h-4" />,
-  job: <Briefcase className="w-4 h-4" />,
+  mission: <Briefcase className="w-4 h-4" />,
   invoice: <Receipt className="w-4 h-4" />,
   quote: <FileText className="w-4 h-4" />,
 };
@@ -43,7 +43,7 @@ const ENTITY_TYPES = [
   { value: 'product', label: 'Produits' },
   { value: 'booking', label: 'Réservations' },
   { value: 'order', label: 'Commandes' },
-  { value: 'job', label: 'Missions' },
+  { value: 'mission', label: 'Missions' },
   { value: 'invoice', label: 'Factures' },
   { value: 'quote', label: 'Devis' },
 ];

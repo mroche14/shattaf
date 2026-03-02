@@ -96,6 +96,12 @@ class AuthService:
         first_name: str,
         last_name: str,
         is_plumber: bool = False,
+        company_name: str | None = None,
+        siren: str | None = None,
+        siret: str | None = None,
+        department: str | None = None,
+        service_area_lat: float | None = None,
+        service_area_lng: float | None = None,
     ) -> User:
         """Register a new user."""
         hashed_password = self.hash_password(password)
@@ -114,11 +120,19 @@ class AuthService:
 
         # Create profile based on role
         if is_plumber:
-            profile = PlumberProfile(user_id=user.id)
+            profile = PlumberProfile(
+                user_id=user.id,
+                company_name=company_name,
+                siren=siren,
+                siret=siret,
+                department=department,
+                service_area_lat=service_area_lat,
+                service_area_lng=service_area_lng,
+            )
             self.session.add(profile)
             await self.session.flush()
 
-            # Try to auto-link to existing prospect (lazy import to avoid circular dependency)
+            # Try to auto-link to existing prospect by SIREN or phone
             from .prospect import ProspectService
             prospect_service = ProspectService(self.session)
             await prospect_service.link_plumber_to_prospect(

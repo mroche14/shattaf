@@ -1,8 +1,9 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, CreditCard, Shield } from 'lucide-react';
 import { useOrder, useOrderItems } from '../../api/hooks/useOrders';
 import { formatPrice } from '@shattaf/shared-types';
+import StripePaymentForm from '../../components/checkout/StripePaymentForm';
 
 const CheckoutPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -71,22 +72,14 @@ const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Payment form placeholder */}
+      {/* Stripe payment form */}
       <div className="glass rounded-2xl p-6 mb-6">
         <div className="flex items-center gap-3 mb-6">
           <CreditCard className="w-6 h-6 text-cyan-400" />
           <h2 className="font-bold">Carte bancaire</h2>
         </div>
 
-        <div className="bg-slate-800/50 rounded-xl p-4 text-center text-gray-400">
-          <Lock className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-          <p className="text-sm">
-            Le paiement sécurisé Stripe sera intégré ici
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            Vos données bancaires sont protégées
-          </p>
-        </div>
+        <StripePaymentForm orderId={orderId!} amount={order.totalAmount} />
       </div>
 
       {/* Security notice */}

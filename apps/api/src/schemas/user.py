@@ -116,7 +116,7 @@ class PlumberProfileResponse(BaseModel):
     stripe_onboarding_complete: bool
     stripe_charges_enabled: bool
     stripe_payouts_enabled: bool
-    total_jobs_completed: int
+    total_missions_completed: int
     average_rating: Optional[float] = None
     total_ratings: int
     mandate_signed: bool

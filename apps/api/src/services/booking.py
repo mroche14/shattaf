@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from ..models import Booking, BookingStatus
+from ..models import Booking, BookingType, BookingStatus, Product
 from ..utils.db import uuid_column_eq
 
 
@@ -22,7 +22,21 @@ class BookingService:
         customer_id: UUID,
         **kwargs,
     ) -> Booking:
-        """Create a new booking."""
+        """Create a new booking.
+
+        For product bookings: auto-sets project_id from the product's project.
+        For marketplace bookings: project_id stays None.
+        """
+        # Auto-set project_id from product if not explicitly provided
+        product_id = kwargs.get("product_id")
+        if product_id and not kwargs.get("project_id"):
+            result = await self.session.execute(
+                select(Product).where(uuid_column_eq(Product.id, product_id))
+            )
+            product = result.scalar_one_or_none()
+            if product and product.project_id:
+                kwargs["project_id"] = product.project_id
+
         booking = Booking(
             customer_id=customer_id,
             status=BookingStatus.DRAFT,
@@ -74,7 +88,11 @@ class BookingService:
         return booking
 
     async def submit_booking(self, booking_id: UUID) -> Optional[Booking]:
-        """Submit booking for plumber matching."""
+        """Submit booking for plumber matching.
+
+        Product bookings require toilet photos.
+        Marketplace bookings require category + description instead.
+        """
         booking = await self.get_booking(booking_id)
         if not booking:
             return None
@@ -82,9 +100,15 @@ class BookingService:
         if booking.status != BookingStatus.DRAFT:
             return None
 
-        # Validate required photos
-        if not booking.photo_toilet_front_url or not booking.photo_toilet_side_url:
-            return None
+        # Validate based on booking type
+        if booking.type == BookingType.MARKETPLACE:
+            # Marketplace bookings need category + description
+            if not booking.category or not booking.description:
+                return None
+        else:
+            # Product bookings need toilet photos
+            if not booking.photo_toilet_front_url or not booking.photo_toilet_side_url:
+                return None
 
         booking.status = BookingStatus.SUBMITTED
         await self.session.commit()

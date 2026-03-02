@@ -9,7 +9,7 @@ const AuthLayout: React.FC = () => {
       <div className="flex items-center gap-2 mb-2">
         <Droplets className="w-10 h-10 text-cyan-400" />
         <span className="font-display font-bold text-2xl tracking-tighter">
-          SHATTAF <span className="text-cyan-400">PRO</span>
+          RESEAU <span className="text-cyan-400">PLOMB</span>
         </span>
       </div>
       <p className="text-gray-500 text-sm mb-8">Espace plombier partenaire</p>

@@ -223,7 +223,7 @@ const PlumbersPage: React.FC = () => {
                           </span>
                         </td>
                         <td>
-                          <span className="font-medium">{plumber.totalJobsCompleted}</span>
+                          <span className="font-medium">{plumber.totalMissionsCompleted}</span>
                         </td>
                         <td>
                           {plumber.averageRating ? (

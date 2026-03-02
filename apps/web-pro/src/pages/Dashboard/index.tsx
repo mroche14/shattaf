@@ -9,21 +9,21 @@ import { formatDate } from '@shattaf/shared-types';
 const DashboardPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
 
-  const { data: todayJobs } = useQuery({
-    queryKey: ['jobs', 'today'],
-    queryFn: () => apiClient.jobs.listToday(),
+  const { data: todayMissions } = useQuery({
+    queryKey: ['missions', 'today'],
+    queryFn: () => apiClient.missions.listToday(),
   });
 
-  const { data: allJobs } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => apiClient.jobs.list(),
+  const { data: allMissions } = useQuery({
+    queryKey: ['missions'],
+    queryFn: () => apiClient.missions.list(),
   });
 
-  const pendingJobs = allJobs?.filter(
-    (j) => j.status === 'scheduled' || j.status === 'en_route'
+  const pendingMissions = allMissions?.filter(
+    (m) => m.status === 'scheduled' || m.status === 'en_route'
   ).length || 0;
 
-  const completedJobs = allJobs?.filter((j) => j.status === 'completed').length || 0;
+  const completedMissions = allMissions?.filter((m) => m.status === 'completed').length || 0;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -48,7 +48,7 @@ const DashboardPage: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
               <Clock className="w-5 h-5 text-cyan-400" />
             </div>
-            <span className="text-2xl font-bold">{pendingJobs}</span>
+            <span className="text-2xl font-bold">{pendingMissions}</span>
           </div>
           <p style={{ color: 'var(--text-secondary)' }} className="text-sm">En attente</p>
         </div>
@@ -58,7 +58,7 @@ const DashboardPage: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-emerald-400" />
             </div>
-            <span className="text-2xl font-bold">{completedJobs}</span>
+            <span className="text-2xl font-bold">{completedMissions}</span>
           </div>
           <p style={{ color: 'var(--text-secondary)' }} className="text-sm">Terminées</p>
         </div>
@@ -77,26 +77,26 @@ const DashboardPage: React.FC = () => {
           </Link>
         </div>
 
-        {todayJobs?.length === 0 ? (
+        {todayMissions?.length === 0 ? (
           <div className="glass rounded-2xl p-6 text-center transition-colors duration-200">
             <Briefcase className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
             <p style={{ color: 'var(--text-secondary)' }}>Aucune mission prévue aujourd'hui</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {todayJobs?.map((job) => (
+            {todayMissions?.map((mission) => (
               <Link
-                key={job.id}
-                to={`/missions/${job.id}`}
+                key={mission.id}
+                to={`/missions/${mission.id}`}
                 className="glass rounded-2xl p-4 block hover:border-cyan-500/30 transition-colors duration-200"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <span className="text-xs font-bold uppercase text-cyan-400">
-                      {job.status === 'scheduled' && 'Planifiée'}
-                      {job.status === 'en_route' && 'En route'}
-                      {job.status === 'checked_in' && 'Sur place'}
-                      {job.status === 'in_progress' && 'En cours'}
+                      {mission.status === 'scheduled' && 'Planifiée'}
+                      {mission.status === 'en_route' && 'En route'}
+                      {mission.status === 'checked_in' && 'Sur place'}
+                      {mission.status === 'in_progress' && 'En cours'}
                     </span>
                     <p className="font-medium mt-1">Installation shattaf</p>
                   </div>

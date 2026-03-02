@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from ..models import Invoice, InvoiceItem, InvoiceStatus, Order, User, PlumberProfile
+from ..models import Invoice, InvoiceItem, InvoiceStatus, Order, Booking, User, PlumberProfile
 from ..utils.db import uuid_column_eq
 
 
@@ -94,11 +94,23 @@ class InvoiceService:
         self.session.add(invoice)
         await self.session.flush()
 
-        # Create Section A item (product)
+        # Get booking to determine context-aware descriptions
+        booking = None
+        if order.booking_id:
+            result = await self.session.execute(
+                select(Booking).where(uuid_column_eq(Booking.id, order.booking_id))
+            )
+            booking = result.scalar_one_or_none()
+
+        is_marketplace = booking and hasattr(booking, 'type') and str(booking.type) in ('marketplace', 'MARKETPLACE')
+        product_desc = (booking.category or "Intervention plomberie") if is_marketplace else "Produit - Kit complet"
+        install_desc = (booking.description or booking.category or "Prestation plomberie") if is_marketplace else "Installation professionnelle"
+
+        # Create Section A item (product/materials)
         product_item = InvoiceItem(
             invoice_id=invoice.id,
             section="A",
-            description="Shattaf - Kit complet",
+            description=product_desc,
             quantity=1,
             unit_price=order.product_subtotal,
             vat_rate="8.5",
@@ -107,11 +119,11 @@ class InvoiceService:
         )
         self.session.add(product_item)
 
-        # Create Section B item (installation)
+        # Create Section B item (installation/labor)
         install_item = InvoiceItem(
             invoice_id=invoice.id,
             section="B",
-            description="Installation shattaf",
+            description=install_desc,
             quantity=1,
             unit_price=order.installation_subtotal,
             vat_rate="8.5",

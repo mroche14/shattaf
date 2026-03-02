@@ -7,7 +7,7 @@ from .booking import BookingService
 from .matching import MatchingService
 from .quote import QuoteService
 from .order import OrderService
-from .job import JobService
+from .mission import MissionService
 from .invoice import InvoiceService
 
 __all__ = [
@@ -18,6 +18,6 @@ __all__ = [
     "MatchingService",
     "QuoteService",
     "OrderService",
-    "JobService",
+    "MissionService",
     "InvoiceService",
 ]

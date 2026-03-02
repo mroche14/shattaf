@@ -13,7 +13,7 @@ from ..models.plumber import PlumberProfile, PlumberStatus, Department
 from ..models.customer import CustomerProfile
 from ..models.booking import Booking, BookingStatus
 from ..models.order import Order, OrderStatus
-from ..models.job import Job, JobStatus
+from ..models.mission import Mission, MissionStatus
 from ..models.invoice import Invoice
 from ..models.product import Product
 from ..models.pricing import PricingConfig
@@ -40,8 +40,8 @@ class DashboardStats(BaseModel):
     pendingBookings: int
     totalOrders: int
     totalRevenue: int
-    todayJobs: int
-    completedJobs: int
+    todayMissions: int
+    completedMissions: int
     byDepartment: List[DepartmentStats]
 
 
@@ -75,6 +75,28 @@ class DepartmentCoverage(BaseModel):
 
 class CoverageStatsResponse(BaseModel):
     departments: List[DepartmentCoverage]
+
+
+class DeadZoneRequest(BaseModel):
+    department: str  # "971", "972", "973"
+    mode: str = "distance"  # "distance" | "time"
+    threshold: float = 20.0  # km for distance, minutes for time
+    extra_locations: Optional[List[dict]] = None  # [{"lat": ..., "lng": ...}]
+    include_plumbers: bool = True  # set False to use only extra_locations
+    force: bool = False  # bypass cache
+
+
+class DeadZoneResponse(BaseModel):
+    department: str
+    mode: str
+    threshold: float
+    geojson: Optional[dict] = None
+    stats: dict
+    plumber_count: int
+    point_count: int = 0
+    compute_ms: int = 0
+    cached: bool = False
+    cached_at: Optional[str] = None
 
 
 class InterventionLocationCreate(BaseModel):
@@ -139,18 +161,18 @@ async def get_dashboard_stats(
         )
     )).scalar_one() or 0
 
-    # Today's jobs
+    # Today's missions
     today = date.today()
-    today_jobs = (await session.execute(
-        select(func.count(Job.id)).where(
-            func.date(Job.scheduled_date) == today
+    today_missions = (await session.execute(
+        select(func.count(Mission.id)).where(
+            func.date(Mission.scheduled_date) == today
         )
     )).scalar_one()
 
-    # Completed jobs
-    completed_jobs = (await session.execute(
-        select(func.count(Job.id)).where(
-            Job.status == JobStatus.COMPLETED
+    # Completed missions
+    completed_missions = (await session.execute(
+        select(func.count(Mission.id)).where(
+            Mission.status == MissionStatus.COMPLETED
         )
     )).scalar_one()
 
@@ -159,7 +181,7 @@ async def get_dashboard_stats(
     for dept in Department:
         plumber_count = (await session.execute(
             select(func.count(PlumberProfile.id)).where(
-                PlumberProfile.department == dept
+                PlumberProfile.department == dept.value
             )
         )).scalar_one()
 
@@ -195,8 +217,8 @@ async def get_dashboard_stats(
         pendingBookings=pending_bookings,
         totalOrders=total_orders,
         totalRevenue=total_revenue,
-        todayJobs=today_jobs,
-        completedJobs=completed_jobs,
+        todayMissions=today_missions,
+        completedMissions=completed_missions,
         byDepartment=department_stats,
     )
 
@@ -254,7 +276,7 @@ async def list_plumbers(
             "serviceAreaLng": plumber.service_area_lng,
             "serviceAreaRadiusKm": plumber.service_area_radius_km,
             "interventionLocations": plumber.intervention_locations or [],
-            "totalJobsCompleted": plumber.total_jobs_completed,
+            "totalMissionsCompleted": plumber.total_missions_completed,
             "averageRating": plumber.average_rating,
             "totalRatings": plumber.total_ratings,
             "stripeChargesEnabled": plumber.stripe_charges_enabled,
@@ -298,7 +320,7 @@ async def get_plumber(
         "serviceAreaLng": plumber.service_area_lng,
         "serviceAreaRadiusKm": plumber.service_area_radius_km,
         "interventionLocations": plumber.intervention_locations or [],
-        "totalJobsCompleted": plumber.total_jobs_completed,
+        "totalMissionsCompleted": plumber.total_missions_completed,
         "averageRating": plumber.average_rating,
         "totalRatings": plumber.total_ratings,
         "stripeChargesEnabled": plumber.stripe_charges_enabled,
@@ -326,10 +348,10 @@ async def update_plumber_status(
     # Log audit
     audit_log = AuditLog(
         user_id=current_user.id,
-        entity_type="plumber",
-        entity_id=plumber_id,
+        resource_type="plumber",
+        resource_id=plumber_id,
         action="status_change",
-        changes={"old_status": old_status.value, "new_status": data.status},
+        new_values={"old_status": old_status.value, "new_status": data.status},
     )
     session.add(audit_log)
     await session.commit()
@@ -350,16 +372,16 @@ async def update_plumber_department(
         raise HTTPException(status_code=404, detail="Plumber not found")
 
     old_department = plumber.department
-    plumber.department = Department(data.department) if data.department else None
+    plumber.department = data.department if data.department else None
     session.add(plumber)
 
     # Log audit
     audit_log = AuditLog(
         user_id=current_user.id,
-        entity_type="plumber",
-        entity_id=plumber_id,
+        resource_type="plumber",
+        resource_id=plumber_id,
         action="update",
-        changes={
+        new_values={
             "old_department": old_department,
             "new_department": data.department,
         },
@@ -390,10 +412,10 @@ async def add_intervention_location(
     # Log audit
     audit_log = AuditLog(
         user_id=current_user.id,
-        entity_type="plumber",
-        entity_id=plumber_id,
+        resource_type="plumber",
+        resource_id=plumber_id,
         action="update",
-        changes={"added_intervention_location": location.model_dump()},
+        new_values={"added_intervention_location": location.model_dump()},
     )
     session.add(audit_log)
     await session.commit()
@@ -424,10 +446,10 @@ async def remove_intervention_location(
     # Log audit
     audit_log = AuditLog(
         user_id=current_user.id,
-        entity_type="plumber",
-        entity_id=plumber_id,
+        resource_type="plumber",
+        resource_id=plumber_id,
         action="update",
-        changes={"removed_intervention_location": removed},
+        new_values={"removed_intervention_location": removed},
     )
     session.add(audit_log)
     await session.commit()
@@ -544,6 +566,155 @@ async def get_coverage_stats(
     return CoverageStatsResponse(departments=departments)
 
 
+@router.post("/coverage/dead-zones", response_model=DeadZoneResponse)
+async def compute_dead_zones(
+    request: DeadZoneRequest,
+    session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_admin_user),
+):
+    """Compute dead zones (uncovered areas) for a department."""
+    import time as _time
+
+    from ..services.dead_zones import (
+        compute_cache_key,
+        compute_distance_dead_zones,
+        compute_time_dead_zones,
+        get_cached_dead_zone,
+        save_dead_zone_cache,
+        DepartmentBoundaryCache,
+    )
+
+    if request.department not in ("971", "972", "973"):
+        raise HTTPException(400, "Département invalide (971, 972, 973 uniquement)")
+
+    # Load boundary (validates file exists)
+    try:
+        DepartmentBoundaryCache.get(request.department)
+    except FileNotFoundError as e:
+        raise HTTPException(400, str(e))
+
+    # Fetch active plumbers with coordinates for this department (unless skipped)
+    plumber_count = 0
+    plumber_coords: list[tuple] = []
+    if request.include_plumbers:
+        query = select(PlumberProfile).where(
+            PlumberProfile.department == request.department,
+            PlumberProfile.status == PlumberStatus.ACTIVE,
+            PlumberProfile.service_area_lat.is_not(None),
+            PlumberProfile.service_area_lng.is_not(None),
+        )
+        plumbers = (await session.execute(query)).scalars().all()
+        plumber_count = len(plumbers)
+        plumber_coords = [(p.service_area_lat, p.service_area_lng) for p in plumbers]
+
+    # Merge extra locations (e.g. prospect coordinates)
+    extra_coords: list[tuple] = []
+    if request.extra_locations:
+        extra_coords = [
+            (loc["lat"], loc["lng"])
+            for loc in request.extra_locations
+            if "lat" in loc and "lng" in loc
+        ]
+
+    all_coords = plumber_coords + extra_coords
+
+    # Determine source type for cache metadata
+    source_type = "both" if request.include_plumbers and extra_coords else (
+        "plumbers" if request.include_plumbers else "prospects"
+    )
+
+    # Check cache (unless force refresh)
+    cache_key = compute_cache_key(
+        request.department, request.mode, request.threshold, all_coords
+    )
+    if not request.force:
+        cached = await get_cached_dead_zone(session, cache_key)
+        if cached:
+            return DeadZoneResponse(
+                department=cached.department,
+                mode=cached.mode,
+                threshold=cached.threshold,
+                geojson=cached.geojson,
+                stats=cached.stats,
+                plumber_count=plumber_count,
+                point_count=cached.point_count,
+                compute_ms=cached.compute_duration_ms,
+                cached=True,
+                cached_at=cached.created_at.isoformat(),
+            )
+
+    t0 = _time.monotonic()
+
+    if request.mode == "distance":
+        locations = [
+            (lat, lng, request.threshold)
+            for lat, lng in all_coords
+        ]
+        result = compute_distance_dead_zones(request.department, locations)
+    elif request.mode == "time":
+        try:
+            result = await compute_time_dead_zones(
+                request.department, all_coords, request.threshold
+            )
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        except Exception as e:
+            if "429" in str(e) or "Limite" in str(e):
+                raise HTTPException(429, "Limite API atteinte, réessayez plus tard")
+            raise HTTPException(504, "Timeout du service isochrone")
+    else:
+        raise HTTPException(400, "Mode invalide (distance ou time)")
+
+    elapsed_ms = int((_time.monotonic() - t0) * 1000)
+
+    # Save to cache
+    await save_dead_zone_cache(
+        session,
+        cache_key=cache_key,
+        department=request.department,
+        mode=request.mode,
+        threshold=request.threshold,
+        source_type=source_type,
+        point_count=result["plumber_count"],
+        plumber_count=plumber_count,
+        geojson=result["geojson"],
+        stats=result["stats"],
+        provider=result.get("provider"),
+        compute_duration_ms=elapsed_ms,
+    )
+
+    return DeadZoneResponse(
+        department=request.department,
+        mode=request.mode,
+        threshold=request.threshold,
+        geojson=result["geojson"],
+        stats=result["stats"],
+        plumber_count=plumber_count,
+        point_count=result["plumber_count"],
+        compute_ms=elapsed_ms,
+        cached=False,
+    )
+
+
+@router.get("/coverage/boundary/{department}")
+async def get_department_boundary(
+    department: str,
+    _current_user: User = Depends(get_current_admin_user),
+):
+    """Return the raw GeoJSON boundary for a department."""
+    from ..services.dead_zones import DepartmentBoundaryCache
+
+    if department not in ("971", "972", "973"):
+        raise HTTPException(400, "Département invalide")
+
+    try:
+        geojson = DepartmentBoundaryCache.get_geojson(department)
+    except FileNotFoundError as e:
+        raise HTTPException(400, str(e))
+
+    return {"geojson": geojson}
+
+
 # ============== Matching ==============
 
 
@@ -562,7 +733,7 @@ class PlumberScoreItem(BaseModel):
     proximity_score: float
     quality_score: float
     load_score: float
-    total_jobs_completed: int
+    total_missions_completed: int
     average_rating: Optional[float]
     total_ratings: int
     lat: float
@@ -708,7 +879,7 @@ async def simulate_matching_at_point_endpoint(
             proximity_score=item["proximity_score"],
             quality_score=item["quality_score"],
             load_score=item["load_score"],
-            total_jobs_completed=plumber.total_jobs_completed,
+            total_missions_completed=plumber.total_missions_completed,
             average_rating=plumber.average_rating,
             total_ratings=plumber.total_ratings,
             lat=plumber.service_area_lat,
@@ -832,7 +1003,7 @@ async def simulate_matching(
                 "serviceAreaLng": plumber.service_area_lng,
                 "serviceAreaRadiusKm": plumber.service_area_radius_km,
                 "interventionLocations": plumber.intervention_locations or [],
-                "totalJobsCompleted": plumber.total_jobs_completed,
+                "totalMissionsCompleted": plumber.total_missions_completed,
                 "averageRating": plumber.average_rating,
                 "totalRatings": plumber.total_ratings,
                 "stripeChargesEnabled": plumber.stripe_charges_enabled,
@@ -874,7 +1045,7 @@ async def list_customers(
         user = await session.get(User, customer.user_id)
         # Count orders
         order_count = (await session.execute(
-            select(func.count(Order.id)).where(Order.customer_id == customer.id)
+            select(func.count(Order.id)).where(Order.customer_id == customer.user_id)
         )).scalar_one()
 
         items.append({
@@ -991,8 +1162,8 @@ async def list_orders(
     }
 
 
-@router.get("/jobs")
-async def list_jobs(
+@router.get("/missions")
+async def list_missions(
     status: Optional[str] = None,
     plumber_id: Optional[UUID] = None,
     page: int = Query(1, ge=1),
@@ -1000,15 +1171,15 @@ async def list_jobs(
     session: AsyncSession = Depends(get_session),
     _current_user: User = Depends(get_current_admin_user),
 ):
-    """List all jobs."""
-    query = select(Job)
+    """List all missions."""
+    query = select(Mission)
 
     if status:
-        query = query.where(Job.status == status)
+        query = query.where(Mission.status == status)
     if plumber_id:
-        query = query.where(Job.plumber_id == plumber_id)
+        query = query.where(Mission.plumber_id == plumber_id)
 
-    query = query.order_by(Job.scheduled_date.desc())
+    query = query.order_by(Mission.scheduled_date.desc())
 
     count_query = select(func.count()).select_from(query.subquery())
     total = (await session.execute(count_query)).scalar_one()
@@ -1016,17 +1187,19 @@ async def list_jobs(
     offset = (page - 1) * limit
     query = query.offset(offset).limit(limit)
 
-    jobs = (await session.execute(query)).scalars().all()
+    missions = (await session.execute(query)).scalars().all()
 
     items = []
-    for job in jobs:
-        plumber = await session.get(PlumberProfile, job.plumber_id) if job.plumber_id else None
+    for mission in missions:
+        plumber = (await session.execute(
+            select(PlumberProfile).where(PlumberProfile.user_id == mission.plumber_id)
+        )).scalar_one_or_none() if mission.plumber_id else None
         plumber_user = await session.get(User, plumber.user_id) if plumber else None
 
         items.append({
-            "id": str(job.id),
-            "orderId": str(job.order_id),
-            "plumberId": str(job.plumber_id),
+            "id": str(mission.id),
+            "orderId": str(mission.order_id),
+            "plumberId": str(mission.plumber_id),
             "plumber": {
                 "id": str(plumber.id),
                 "userId": str(plumber.user_id),
@@ -1040,17 +1213,17 @@ async def list_jobs(
                 } if plumber_user else None,
                 "status": plumber.status.value,
             } if plumber else None,
-            "status": job.status.value if hasattr(job.status, 'value') else str(job.status),
-            "scheduledDate": job.scheduled_date.isoformat(),
-            "checkinLat": job.checkin_lat,
-            "checkinLng": job.checkin_lng,
-            "checkinTime": job.checkin_time.isoformat() if job.checkin_time else None,
-            "startTime": job.start_time.isoformat() if job.start_time else None,
-            "completedAt": job.completed_at.isoformat() if job.completed_at else None,
-            "photoBeforeUrls": job.photo_before_urls or [],
-            "photoAfterUrls": job.photo_after_urls or [],
-            "signatureName": job.signature_name,
-            "createdAt": job.created_at.isoformat(),
+            "status": mission.status.value if hasattr(mission.status, 'value') else str(mission.status),
+            "scheduledDate": mission.scheduled_date.isoformat(),
+            "checkinLat": mission.checkin_lat,
+            "checkinLng": mission.checkin_lng,
+            "checkinTime": mission.checkin_time.isoformat() if mission.checkin_time else None,
+            "startTime": mission.start_time.isoformat() if mission.start_time else None,
+            "completedAt": mission.completed_at.isoformat() if mission.completed_at else None,
+            "photoBeforeUrls": mission.photo_before_urls or [],
+            "photoAfterUrls": mission.photo_after_urls or [],
+            "signatureName": mission.signature_name,
+            "createdAt": mission.created_at.isoformat(),
         })
 
     return {"items": items, "total": total}
@@ -1152,7 +1325,7 @@ async def list_products(
 
 @router.get("/audit")
 async def list_audit_logs(
-    entity_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
@@ -1161,8 +1334,8 @@ async def list_audit_logs(
     """List audit logs."""
     query = select(AuditLog)
 
-    if entity_type:
-        query = query.where(AuditLog.entity_type == entity_type)
+    if resource_type:
+        query = query.where(AuditLog.resource_type == resource_type)
 
     query = query.order_by(AuditLog.created_at.desc())
 
@@ -1179,10 +1352,10 @@ async def list_audit_logs(
             {
                 "id": str(log.id),
                 "userId": str(log.user_id) if log.user_id else None,
-                "entityType": log.entity_type,
-                "entityId": str(log.entity_id),
+                "resourceType": log.resource_type,
+                "resourceId": str(log.resource_id) if log.resource_id else None,
                 "action": log.action,
-                "changes": log.changes,
+                "changes": log.new_values,
                 "ipAddress": log.ip_address,
                 "createdAt": log.created_at.isoformat(),
             }
@@ -1274,10 +1447,10 @@ async def update_pricing_config(
         # Log audit
         audit_log = AuditLog(
             user_id=current_user.id,
-            entity_type="pricing_config",
-            entity_id=config.id,
+            resource_type="pricing_config",
+            resource_id=config.id,
             action="update",
-            changes=changes,
+            new_values=changes,
         )
         session.add(audit_log)
 
@@ -1311,10 +1484,10 @@ async def update_product(
         # Log audit
         audit_log = AuditLog(
             user_id=current_user.id,
-            entity_type="product",
-            entity_id=product.id,
+            resource_type="product",
+            resource_id=product.id,
             action="update",
-            changes=changes,
+            new_values=changes,
         )
         session.add(audit_log)
 

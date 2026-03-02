@@ -93,8 +93,8 @@ class QuoteInfo(BaseModel):
         from_attributes = True
 
 
-class JobInfo(BaseModel):
-    """Job info for tracking."""
+class MissionInfo(BaseModel):
+    """Mission info for tracking."""
     status: str
     scheduled_date: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -136,8 +136,8 @@ class TrackingResponse(BaseModel):
     quotes: list[QuoteInfo] = []
     accepted_quote: Optional[QuoteInfo] = None
 
-    # Job info
-    job: Optional[JobInfo] = None
+    # Mission info
+    mission: Optional[MissionInfo] = None
 
     # Invoice
     invoice: Optional[InvoiceInfo] = None
@@ -321,10 +321,10 @@ async def track_booking(
         if q.status == QuoteStatus.ACCEPTED:
             accepted_quote = quote_info
 
-    # Get job if exists (via Order which links Quote to Job)
-    # For now, we skip job/invoice lookup as the relationships are complex
-    # TODO: Add proper job/invoice lookup via Order
-    job_info = None
+    # Get mission if exists (via Order which links Quote to Mission)
+    # For now, we skip mission/invoice lookup as the relationships are complex
+    # TODO: Add proper mission/invoice lookup via Order
+    mission_info = None
     invoice_info = None
 
     # Get assigned plumber info
@@ -351,7 +351,7 @@ async def track_booking(
         plumber=plumber_info,
         quotes=quote_infos,
         accepted_quote=accepted_quote,
-        job=job_info,
+        mission=mission_info,
         invoice=invoice_info,
     )
 

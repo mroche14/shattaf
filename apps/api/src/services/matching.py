@@ -134,7 +134,7 @@ def compute_matching_scores(
     w = _normalize_weights(weights)
 
     # Pre-compute max jobs across all candidates for load balancing
-    max_jobs = max(p.total_jobs_completed for p, _ in candidates)
+    max_jobs = max(p.total_missions_completed for p, _ in candidates)
 
     # Use the farthest candidate as the reference distance for relative scoring
     max_distance = max(d for _, d in candidates) if candidates else 1.0
@@ -152,7 +152,7 @@ def compute_matching_scores(
         quality = (raw * n / C + 0.5 * (C - n) / C) * 100.0
 
         # Load: relative to busiest candidate, 0-100
-        load = 100.0 * (1.0 - plumber.total_jobs_completed / (max_jobs + 1))
+        load = 100.0 * (1.0 - plumber.total_missions_completed / (max_jobs + 1))
 
         total_score = (
             w.get("proximity", 0) * proximity

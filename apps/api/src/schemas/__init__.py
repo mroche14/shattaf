@@ -37,16 +37,27 @@ from .order import (
     OrderResponse,
     OrderItemResponse,
 )
-from .job import (
-    JobResponse,
-    JobCheckin,
-    JobPhotoUpload,
-    JobSignature,
-    JobComplete,
+from .mission import (
+    MissionResponse,
+    MissionCheckin,
+    MissionPhotoUpload,
+    MissionSignature,
+    MissionComplete,
 )
 from .invoice import (
     InvoiceResponse,
     InvoiceItemResponse,
+)
+from .ai_devis import (
+    AiDevisRequest,
+    AiDevisResponse,
+    AiDevisLineItem,
+)
+from .verification import (
+    VerificationCreate,
+    VerificationAccept,
+    VerificationComplete,
+    VerificationResponse,
 )
 
 __all__ = [
@@ -81,13 +92,22 @@ __all__ = [
     # Order
     "OrderResponse",
     "OrderItemResponse",
-    # Job
-    "JobResponse",
-    "JobCheckin",
-    "JobPhotoUpload",
-    "JobSignature",
-    "JobComplete",
+    # Mission
+    "MissionResponse",
+    "MissionCheckin",
+    "MissionPhotoUpload",
+    "MissionSignature",
+    "MissionComplete",
     # Invoice
     "InvoiceResponse",
     "InvoiceItemResponse",
+    # AI Devis
+    "AiDevisRequest",
+    "AiDevisResponse",
+    "AiDevisLineItem",
+    # Verification
+    "VerificationCreate",
+    "VerificationAccept",
+    "VerificationComplete",
+    "VerificationResponse",
 ]

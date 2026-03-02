@@ -15,12 +15,12 @@ const ProfilePage: React.FC = () => {
     queryFn: () => apiClient.users.getPlumberProfile(),
   });
 
-  const { data: allJobs } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => apiClient.jobs.list(),
+  const { data: allMissions } = useQuery({
+    queryKey: ['missions'],
+    queryFn: () => apiClient.missions.list(),
   });
 
-  const completedJobsCount = allJobs?.filter((j) => j.status === 'completed').length || 0;
+  const completedMissionsCount = allMissions?.filter((m) => m.status === 'completed').length || 0;
 
   const handleLogout = () => {
     logout();
@@ -60,7 +60,7 @@ const ProfilePage: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="glass rounded-2xl p-4 transition-colors duration-200">
-          <p className="text-2xl font-bold">{completedJobsCount}</p>
+          <p className="text-2xl font-bold">{completedMissionsCount}</p>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Missions terminées</p>
         </div>
         <div className="glass rounded-2xl p-4 transition-colors duration-200">

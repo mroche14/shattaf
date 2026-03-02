@@ -32,7 +32,7 @@ interface QuoteInfo {
   plumber?: PlumberInfo;
 }
 
-interface JobInfo {
+interface MissionInfo {
   status: string;
   scheduled_date?: string;
   completed_at?: string;
@@ -57,7 +57,7 @@ interface TrackingData {
   plumber?: PlumberInfo;
   quotes: QuoteInfo[];
   accepted_quote?: QuoteInfo;
-  job?: JobInfo;
+  mission?: MissionInfo;
   invoice?: InvoiceInfo;
 }
 
@@ -328,7 +328,7 @@ const TrackingPage: React.FC = () => {
         )}
 
         {/* Scheduled Date */}
-        {tracking.job?.scheduled_date && (
+        {tracking.mission?.scheduled_date && (
           <div className="glass rounded-2xl p-6 mb-6">
             <h2 className="font-bold mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-cyan-400" />
@@ -336,7 +336,7 @@ const TrackingPage: React.FC = () => {
             </h2>
             <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
               <p className="text-lg font-bold text-cyan-400">
-                {formatDate(tracking.job.scheduled_date)}
+                {formatDate(tracking.mission.scheduled_date)}
               </p>
               <p className="text-sm text-gray-400 mt-1">
                 Le plombier vous contactera pour confirmer l'heure exacte.

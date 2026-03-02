@@ -12,7 +12,7 @@ class OrderItemResponse(BaseModel):
     """Order item response."""
 
     id: UUID
-    product_id: UUID
+    product_id: Optional[UUID] = None
     product_name: str
     product_sku: str
     unit_price: int

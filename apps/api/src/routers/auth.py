@@ -46,6 +46,12 @@ async def register(
         first_name=data.first_name,
         last_name=data.last_name,
         is_plumber=data.is_plumber,
+        company_name=data.company_name,
+        siren=data.siren,
+        siret=data.siret,
+        department=data.department,
+        service_area_lat=data.service_area_lat,
+        service_area_lng=data.service_area_lng,
     )
 
     return user

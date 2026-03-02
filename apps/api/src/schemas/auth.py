@@ -34,6 +34,14 @@ class RegisterRequest(BaseModel):
     last_name: str
     is_plumber: bool = False
 
+    # Optional plumber fields (used when is_plumber=True)
+    company_name: str | None = None
+    siren: str | None = None
+    siret: str | None = None
+    department: str | None = None
+    service_area_lat: float | None = None
+    service_area_lng: float | None = None
+
 
 class UserInToken(CamelModel):
     """User info included in token response."""

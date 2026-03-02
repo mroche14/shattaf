@@ -3,6 +3,7 @@
 from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
+from uuid import UUID
 from sqlmodel import Field, Column, JSON
 
 from .base import BaseModel
@@ -20,6 +21,9 @@ class Product(BaseModel, table=True):
     """Product in catalog."""
 
     __tablename__ = "products"
+
+    # Project link
+    project_id: Optional[UUID] = Field(default=None, foreign_key="projects.id", index=True)
 
     sku: str = Field(unique=True, index=True)
     name: str

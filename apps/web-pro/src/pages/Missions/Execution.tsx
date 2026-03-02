@@ -6,7 +6,7 @@ import { apiClient } from '../../api/client';
 
 type ExecutionStep = 'checkin' | 'photos_before' | 'working' | 'photos_after' | 'signature' | 'complete';
 
-const JobExecutionPage: React.FC = () => {
+const MissionExecutionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -15,34 +15,34 @@ const JobExecutionPage: React.FC = () => {
   const [signatureName, setSignatureName] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const { data: job, isLoading } = useQuery({
-    queryKey: ['job', id],
-    queryFn: () => apiClient.jobs.get(id!),
+  const { data: mission, isLoading } = useQuery({
+    queryKey: ['mission', id],
+    queryFn: () => apiClient.missions.get(id!),
     enabled: !!id,
   });
 
   const checkinMutation = useMutation({
     mutationFn: ({ lat, lng }: { lat: number; lng: number }) =>
-      apiClient.jobs.checkin(id!, lat, lng),
+      apiClient.missions.checkin(id!, lat, lng),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['job', id] });
+      queryClient.invalidateQueries({ queryKey: ['mission', id] });
       setCurrentStep('photos_before');
     },
   });
 
   const startWorkMutation = useMutation({
-    mutationFn: () => apiClient.jobs.start(id!),
+    mutationFn: () => apiClient.missions.start(id!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['job', id] });
+      queryClient.invalidateQueries({ queryKey: ['mission', id] });
       setCurrentStep('working');
     },
   });
 
   const completeMutation = useMutation({
-    mutationFn: () => apiClient.jobs.complete(id!),
+    mutationFn: () => apiClient.missions.complete(id!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['job', id] });
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['mission', id] });
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
       navigate('/missions');
     },
   });
@@ -84,7 +84,7 @@ const JobExecutionPage: React.FC = () => {
     );
   }
 
-  if (!job) {
+  if (!mission) {
     return (
       <div className="container mx-auto px-4 py-6 text-center">
         <h1 className="text-xl font-bold mb-4">Mission non trouvée</h1>
@@ -331,4 +331,4 @@ const JobExecutionPage: React.FC = () => {
   );
 };
 
-export default JobExecutionPage;
+export default MissionExecutionPage;

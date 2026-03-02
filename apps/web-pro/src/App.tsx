@@ -13,9 +13,13 @@ import RegisterPage from './pages/Auth/Register';
 import DashboardPage from './pages/Dashboard';
 import MissionsPage from './pages/Missions';
 import MissionDetailPage from './pages/Missions/Detail';
-import JobExecutionPage from './pages/Missions/Execution';
+import MissionExecutionPage from './pages/Missions/Execution';
 import EarningsPage from './pages/Earnings';
 import ProfilePage from './pages/Profile';
+import OnboardingPage from './pages/Onboarding';
+import AIDevisGenerator from './pages/Devis/AIDevisGenerator';
+import VerificationsPage from './pages/Verification';
+import VerificationDetailPage from './pages/Verification/Detail';
 
 // Protected route wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -72,6 +76,16 @@ const App: React.FC = () => {
         />
       </Route>
 
+      {/* Onboarding (protected, no ProLayout) */}
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Protected routes */}
       <Route
         element={
@@ -83,7 +97,10 @@ const App: React.FC = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/missions" element={<MissionsPage />} />
         <Route path="/missions/:id" element={<MissionDetailPage />} />
-        <Route path="/missions/:id/execution" element={<JobExecutionPage />} />
+        <Route path="/missions/:id/execution" element={<MissionExecutionPage />} />
+        <Route path="/devis/ai/:bookingId" element={<AIDevisGenerator />} />
+        <Route path="/verifications" element={<VerificationsPage />} />
+        <Route path="/verifications/:id" element={<VerificationDetailPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

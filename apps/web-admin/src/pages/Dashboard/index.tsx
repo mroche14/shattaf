@@ -15,7 +15,6 @@ import {
   Mail,
   UserCheck,
   Building,
-  ExternalLink,
 } from 'lucide-react';
 import {
   BarChart,
@@ -69,6 +68,7 @@ const formatPrice = (cents: number) =>
   }).format(cents / 100);
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const { data: stats, isLoading } = useQuery({
     queryKey: ['adminStats'],
     queryFn: () => adminApi.dashboard.getStats(),
@@ -102,60 +102,58 @@ const DashboardPage: React.FC = () => {
     <div className="p-4 lg:p-8">
       <h1 className="font-display text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          icon={<Wrench className="w-6 h-6" />}
-          label="Plombiers"
-          value={stats?.totalPlumbers || 0}
-          subLabel={`${stats?.activePlumbers || 0} actifs`}
-          color="indigo"
-        />
-        <StatCard
-          icon={<Users className="w-6 h-6" />}
-          label="Clients"
-          value={stats?.totalCustomers || 0}
-          color="cyan"
-        />
-        <StatCard
-          icon={<ClipboardList className="w-6 h-6" />}
-          label="Réservations"
-          value={stats?.totalBookings || 0}
-          subLabel={`${stats?.pendingBookings || 0} en attente`}
-          color="amber"
-        />
-        <StatCard
-          icon={<Package className="w-6 h-6" />}
-          label="Commandes"
-          value={stats?.totalOrders || 0}
-          color="emerald"
-        />
-        <StatCard
-          icon={<Briefcase className="w-6 h-6" />}
-          label="Missions aujourd'hui"
-          value={stats?.todayJobs || 0}
-          color="blue"
-        />
-        <StatCard
-          icon={<Briefcase className="w-6 h-6" />}
-          label="Missions terminées"
-          value={stats?.completedJobs || 0}
-          color="green"
-        />
-        <StatCard
-          icon={<TrendingUp className="w-6 h-6" />}
-          label="Revenus totaux"
-          value={formatPrice(stats?.totalRevenue || 0)}
-          isPrice
-          color="pink"
-        />
-        <StatCard
-          icon={<MapPin className="w-6 h-6" />}
-          label="Départements"
-          value={departmentData.length}
-          subLabel="couverts"
-          color="orange"
-        />
+      {/* KPI two-column layout: Activité | Prospects */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Left: Activité */}
+        <div>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-blue-500/20 flex items-center justify-center">
+              <Briefcase className="w-4.5 h-4.5 text-indigo-400" />
+            </div>
+            <h2 className="font-display text-lg font-bold">Activité</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            <MiniStatCard icon={<Wrench className="w-4 h-4" />} label="Plombiers" value={stats?.totalPlumbers || 0} sub={`${stats?.activePlumbers || 0} actifs`} color="indigo" />
+            <MiniStatCard icon={<Users className="w-4 h-4" />} label="Clients" value={stats?.totalCustomers || 0} color="cyan" />
+            <MiniStatCard icon={<ClipboardList className="w-4 h-4" />} label="Réservations" value={stats?.totalBookings || 0} sub={`${stats?.pendingBookings || 0} en attente`} color="amber" />
+            <MiniStatCard icon={<Package className="w-4 h-4" />} label="Commandes" value={stats?.totalOrders || 0} color="emerald" />
+            <MiniStatCard icon={<Briefcase className="w-4 h-4" />} label="Missions auj." value={stats?.todayMissions || 0} color="blue" />
+            <MiniStatCard icon={<Briefcase className="w-4 h-4" />} label="Terminées" value={stats?.completedMissions || 0} color="green" />
+            <MiniStatCard icon={<TrendingUp className="w-4 h-4" />} label="Revenus" value={formatPrice(stats?.totalRevenue || 0)} color="pink" />
+            <MiniStatCard icon={<MapPin className="w-4 h-4" />} label="Départements" value={departmentData.length} sub="couverts" color="orange" />
+          </div>
+        </div>
+
+        {/* Right: Prospects */}
+        <div>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center">
+              <UserSearch className="w-4.5 h-4.5 text-orange-400" />
+            </div>
+            <h2 className="font-display text-lg font-bold">Prospects</h2>
+            {prospectStats && (
+              <span className="text-sm font-medium ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                {prospectStats.total.toLocaleString()} total
+              </span>
+            )}
+          </div>
+          {prospectStats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              <MiniStatCard icon={<Phone className="w-4 h-4" />} label="Avec tél." value={prospectStats.withTelephone.toLocaleString()} sub={`${Math.round((prospectStats.withTelephone / prospectStats.total) * 100)}%`} color="emerald" />
+              <MiniStatCard icon={<Mail className="w-4 h-4" />} label="Avec email" value={prospectStats.withEmail.toLocaleString()} sub={`${Math.round((prospectStats.withEmail / prospectStats.total) * 100)}%`} color="blue" />
+              <MiniStatCard icon={<UserCheck className="w-4 h-4" />} label="Indépendants" value={prospectStats.individuels.toLocaleString()} color="amber" />
+              <MiniStatCard icon={<Building className="w-4 h-4" />} label="Sociétés" value={prospectStats.societes.toLocaleString()} color="pink" />
+              <MiniActionCard icon={<Phone className="w-3.5 h-3.5" />} label="Indép. + tél." value={prospectStats.breakdown.individuelsWithPhone} total={prospectStats.total} color="from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=true&hasTelephone=true')} />
+              <MiniActionCard icon={<Mail className="w-3.5 h-3.5" />} label="Indép. + email" value={prospectStats.breakdown.individuelsWithEmail} total={prospectStats.total} color="from-blue-500/20 to-indigo-500/20 text-blue-400 border-blue-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=true&hasEmail=true')} />
+              <MiniActionCard icon={<Phone className="w-3.5 h-3.5" />} label="Soc. + tél." value={prospectStats.breakdown.societesWithPhone} total={prospectStats.total} color="from-pink-500/20 to-rose-500/20 text-pink-400 border-pink-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=false&hasTelephone=true')} />
+              <MiniActionCard icon={<Mail className="w-3.5 h-3.5" />} label="Soc. + email" value={prospectStats.breakdown.societesWithEmail} total={prospectStats.total} color="from-indigo-500/20 to-violet-500/20 text-indigo-400 border-indigo-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=false&hasEmail=true')} />
+            </div>
+          ) : (
+            <div className="stat-card flex items-center justify-center h-32" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-sm">Chargement des prospects...</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Charts */}
@@ -291,44 +289,62 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-interface StatCardProps {
+/* ── Compact KPI Cards ────────────────────────────────────────── */
+
+const MINI_COLORS: Record<string, { icon: string; bg: string }> = {
+  indigo:  { icon: 'text-indigo-400',  bg: 'bg-indigo-500/10' },
+  cyan:    { icon: 'text-cyan-400',    bg: 'bg-cyan-500/10' },
+  amber:   { icon: 'text-amber-400',   bg: 'bg-amber-500/10' },
+  emerald: { icon: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  blue:    { icon: 'text-blue-400',    bg: 'bg-blue-500/10' },
+  green:   { icon: 'text-green-400',   bg: 'bg-green-500/10' },
+  pink:    { icon: 'text-pink-400',    bg: 'bg-pink-500/10' },
+  orange:  { icon: 'text-orange-400',  bg: 'bg-orange-500/10' },
+};
+
+const MiniStatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
   value: number | string;
-  subLabel?: string;
+  sub?: string;
   color: string;
-  isPrice?: boolean;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, subLabel, color }) => {
-  const colorClasses: Record<string, string> = {
-    indigo: 'from-indigo-500/20 to-blue-500/20 text-indigo-400',
-    cyan: 'from-cyan-500/20 to-blue-500/20 text-cyan-400',
-    amber: 'from-amber-500/20 to-orange-500/20 text-amber-400',
-    emerald: 'from-emerald-500/20 to-green-500/20 text-emerald-400',
-    blue: 'from-blue-500/20 to-indigo-500/20 text-blue-400',
-    green: 'from-green-500/20 to-emerald-500/20 text-green-400',
-    pink: 'from-pink-500/20 to-rose-500/20 text-pink-400',
-    orange: 'from-orange-500/20 to-amber-500/20 text-orange-400',
-  };
-
+}> = ({ icon, label, value, sub, color }) => {
+  const c = MINI_COLORS[color] || MINI_COLORS.indigo;
   return (
-    <div className="stat-card">
-      <div className="flex items-start justify-between">
-        <div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center`}
-        >
+    <div className="stat-card !p-3 relative">
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className={`w-6 h-6 rounded-md ${c.bg} ${c.icon} flex items-center justify-center flex-shrink-0`}>
           {icon}
         </div>
+        <span className="text-sm font-bold truncate" style={{ color: 'var(--text-main)' }}>{label}</span>
       </div>
-      <div className="mt-4">
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {label}
-          {subLabel && <span style={{ color: 'var(--text-tertiary)' }}> · {subLabel}</span>}
-        </p>
-      </div>
+      <p className="text-2xl font-bold leading-tight text-center">{value}</p>
+      {sub && <span className="absolute bottom-1.5 right-2.5 text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>{sub}</span>}
     </div>
+  );
+};
+
+const MiniActionCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  total: number;
+  color: string;
+  onClick: () => void;
+}> = ({ icon, label, value, total, color, onClick }) => {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <button
+      onClick={onClick}
+      className={`stat-card !p-3 border bg-gradient-to-br ${color} hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer relative`}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        {icon}
+        <span className="text-sm font-bold truncate">{label}</span>
+      </div>
+      <p className="text-2xl font-bold leading-tight text-center">{value.toLocaleString()}</p>
+      <span className="absolute bottom-1.5 right-2.5 text-[11px] font-semibold opacity-70">{pct}%</span>
+    </button>
   );
 };
 
@@ -344,7 +360,6 @@ const TOOLTIP_STYLE = {
 };
 
 const ProspectSection: React.FC<{ stats: ProspectStatsType }> = ({ stats }) => {
-  const navigate = useNavigate();
   const b = stats.breakdown;
 
   // Breakdown chart: stacked bar (Indépendants / Sociétés / Inconnu) × (Tél / Email)
@@ -369,102 +384,9 @@ const ProspectSection: React.FC<{ stats: ProspectStatsType }> = ({ stats }) => {
     },
   ];
 
-  // Actionable segments: clickable cards that navigate to prospects list with pre-applied filters
-  const segments = [
-    {
-      label: 'Indép. avec tél.',
-      value: b.individuelsWithPhone,
-      pct: stats.total > 0 ? Math.round((b.individuelsWithPhone / stats.total) * 100) : 0,
-      color: 'from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30',
-      filterUrl: '/plumbers?tab=prospects&individuel=true&hasTelephone=true',
-      icon: <Phone className="w-4 h-4" />,
-    },
-    {
-      label: 'Indép. avec email',
-      value: b.individuelsWithEmail,
-      pct: stats.total > 0 ? Math.round((b.individuelsWithEmail / stats.total) * 100) : 0,
-      color: 'from-blue-500/20 to-indigo-500/20 text-blue-400 border-blue-500/30',
-      filterUrl: '/plumbers?tab=prospects&individuel=true&hasEmail=true',
-      icon: <Mail className="w-4 h-4" />,
-    },
-    {
-      label: 'Sociétés avec tél.',
-      value: b.societesWithPhone,
-      pct: stats.total > 0 ? Math.round((b.societesWithPhone / stats.total) * 100) : 0,
-      color: 'from-pink-500/20 to-rose-500/20 text-pink-400 border-pink-500/30',
-      filterUrl: '/plumbers?tab=prospects&individuel=false&hasTelephone=true',
-      icon: <Phone className="w-4 h-4" />,
-    },
-    {
-      label: 'Sociétés avec email',
-      value: b.societesWithEmail,
-      pct: stats.total > 0 ? Math.round((b.societesWithEmail / stats.total) * 100) : 0,
-      color: 'from-indigo-500/20 to-violet-500/20 text-indigo-400 border-indigo-500/30',
-      filterUrl: '/plumbers?tab=prospects&individuel=false&hasEmail=true',
-      icon: <Mail className="w-4 h-4" />,
-    },
-  ];
-
   return (
     <>
-      <h2 className="font-display text-xl font-bold mt-10 mb-4">Prospects</h2>
-
-      {/* Top-line stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <StatCard
-          icon={<UserSearch className="w-6 h-6" />}
-          label="Total prospects"
-          value={stats.total.toLocaleString()}
-          color="indigo"
-        />
-        <StatCard
-          icon={<Phone className="w-6 h-6" />}
-          label="Avec téléphone"
-          value={stats.withTelephone.toLocaleString()}
-          subLabel={`${Math.round((stats.withTelephone / stats.total) * 100)}%`}
-          color="emerald"
-        />
-        <StatCard
-          icon={<Mail className="w-6 h-6" />}
-          label="Avec email"
-          value={stats.withEmail.toLocaleString()}
-          subLabel={`${Math.round((stats.withEmail / stats.total) * 100)}%`}
-          color="blue"
-        />
-        <StatCard
-          icon={<UserCheck className="w-6 h-6" />}
-          label="Indépendants"
-          value={stats.individuels.toLocaleString()}
-          color="amber"
-        />
-        <StatCard
-          icon={<Building className="w-6 h-6" />}
-          label="Sociétés"
-          value={stats.societes.toLocaleString()}
-          color="pink"
-        />
-      </div>
-
-      {/* Actionable segments */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {segments.map((seg) => (
-          <button
-            key={seg.label}
-            onClick={() => navigate(seg.filterUrl)}
-            className={`stat-card !p-4 border bg-gradient-to-br ${seg.color} hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer text-left`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                {seg.icon}
-                <span className="text-sm font-medium">{seg.label}</span>
-              </div>
-              <ExternalLink className="w-3.5 h-3.5 opacity-50" />
-            </div>
-            <p className="text-2xl font-bold">{seg.value.toLocaleString()}</p>
-            <p className="text-xs opacity-60">{seg.pct}% du total</p>
-          </button>
-        ))}
-      </div>
+      <h2 className="font-display text-xl font-bold mt-10 mb-4">Prospects — Détails</h2>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

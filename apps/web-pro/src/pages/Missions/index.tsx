@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { MapPin, Clock, ChevronRight, Calendar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
-import type { JobStatus } from '@shattaf/shared-types';
+import type { MissionStatus } from '@shattaf/shared-types';
 
-const statusTabs: { value: JobStatus | 'all'; label: string }[] = [
+const statusTabs: { value: MissionStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Toutes' },
   { value: 'scheduled', label: 'Planifiées' },
   { value: 'in_progress', label: 'En cours' },
@@ -23,11 +23,11 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 };
 
 const MissionsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<JobStatus | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<MissionStatus | 'all'>('all');
 
-  const { data: jobs, isLoading } = useQuery({
-    queryKey: ['jobs', activeTab !== 'all' ? activeTab : undefined],
-    queryFn: () => apiClient.jobs.list(activeTab !== 'all' ? activeTab : undefined),
+  const { data: missions, isLoading } = useQuery({
+    queryKey: ['missions', activeTab !== 'all' ? activeTab : undefined],
+    queryFn: () => apiClient.missions.list(activeTab !== 'all' ? activeTab : undefined),
   });
 
   return (
@@ -52,7 +52,7 @@ const MissionsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Jobs list */}
+      {/* Missions list */}
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -63,23 +63,23 @@ const MissionsPage: React.FC = () => {
             </div>
           ))}
         </div>
-      ) : jobs?.length === 0 ? (
+      ) : missions?.length === 0 ? (
         <div className="glass rounded-2xl p-8 text-center transition-colors duration-200">
           <Calendar className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
           <p style={{ color: 'var(--text-secondary)' }}>Aucune mission</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {jobs?.map((job) => {
-            const status = statusLabels[job.status] || {
-              label: job.status,
+          {missions?.map((mission) => {
+            const status = statusLabels[mission.status] || {
+              label: mission.status,
               color: 'bg-gray-500/20 text-gray-300',
             };
 
             return (
               <Link
-                key={job.id}
-                to={`/missions/${job.id}`}
+                key={mission.id}
+                to={`/missions/${mission.id}`}
                 className="glass rounded-2xl p-4 block hover:border-cyan-500/30 transition-colors duration-200"
               >
                 <div className="flex items-start justify-between">
@@ -95,10 +95,10 @@ const MissionsPage: React.FC = () => {
                         <MapPin className="w-4 h-4" />
                         Voir l'adresse
                       </span>
-                      {job.checkinTime && (
+                      {mission.checkinTime && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {new Date(job.checkinTime).toLocaleTimeString('fr-FR', {
+                          {new Date(mission.checkinTime).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}

@@ -290,7 +290,7 @@ const PlumberDetailPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-[var(--bg-surface)] rounded-xl p-3 text-center">
                 <p className="text-2xl font-bold text-indigo-400">
-                  {plumber.totalJobsCompleted}
+                  {plumber.totalMissionsCompleted}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Missions</p>
               </div>

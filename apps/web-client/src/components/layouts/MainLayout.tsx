@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Droplets, Home, ShoppingBag, User, Menu, X } from 'lucide-react';
+import { Droplets, Home, ShoppingBag, Wrench, User, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 
 const MainLayout: React.FC = () => {
@@ -11,6 +11,7 @@ const MainLayout: React.FC = () => {
   const navItems = [
     { path: '/', icon: Home, label: 'Accueil' },
     { path: '/products', icon: ShoppingBag, label: 'Produits' },
+    { path: '/marketplace', icon: Wrench, label: 'Services' },
     { path: isAuthenticated ? '/account' : '/login', icon: User, label: 'Compte' },
   ];
 
@@ -22,7 +23,7 @@ const MainLayout: React.FC = () => {
           <Link to="/" className="flex items-center gap-2">
             <Droplets className="w-7 h-7 text-cyan-400" />
             <span className="font-display font-bold text-lg tracking-tighter">
-              OASIS <span className="text-cyan-400">SHATTAF</span>
+              RESEAU <span className="text-cyan-400">PLOMB</span>
             </span>
           </Link>
 

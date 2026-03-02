@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for Shattaf Marketplace
+ * Shared TypeScript types for Réseau Plomb platform
  */
 
 // User types
@@ -43,10 +43,38 @@ export interface PlumberProfile {
   stripeOnboardingComplete: boolean;
   stripeChargesEnabled: boolean;
   stripePayoutsEnabled: boolean;
-  totalJobsCompleted: number;
+  totalMissionsCompleted: number;
   averageRating?: number;
   totalRatings: number;
   mandateSigned: boolean;
+}
+
+// Project types
+export type ProjectType = 'internal' | 'marketplace';
+export type ProjectStatus = 'draft' | 'active' | 'paused' | 'archived';
+
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  description?: string;
+  department?: string;
+  landingPageUrl?: string;
+  marketingConfig?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProjectStats {
+  id: string;
+  name: string;
+  slug: string;
+  productCount: number;
+  bookingCount: number;
+  orderCount: number;
+  revenue: number;
 }
 
 // Product types
@@ -54,6 +82,7 @@ export type ProductCategory = 'shattaf' | 'kit' | 'accessory';
 
 export interface Product {
   id: string;
+  projectId?: string;
   sku: string;
   name: string;
   description?: string;
@@ -71,6 +100,7 @@ export interface Product {
 }
 
 // Booking types
+export type BookingType = 'product' | 'marketplace';
 export type BookingStatus = 'draft' | 'submitted' | 'quoted' | 'accepted' | 'expired';
 export type ToiletType = 'standard' | 'wall_hung';
 export type TimeSlot = 'morning' | 'afternoon' | 'evening';
@@ -78,6 +108,10 @@ export type TimeSlot = 'morning' | 'afternoon' | 'evening';
 export interface Booking {
   id: string;
   customerId: string;
+  type: BookingType;
+  projectId?: string;
+  category?: string;
+  description?: string;
   status: BookingStatus;
   addressStreet: string;
   addressCity: string;
@@ -171,7 +205,7 @@ export interface Order {
 
 export interface OrderItem {
   id: string;
-  productId: string;
+  productId?: string;
   productName: string;
   productSku: string;
   unitPrice: number;
@@ -180,23 +214,24 @@ export interface OrderItem {
   isInstallation: boolean;
 }
 
-// Job types
-export type JobStatus =
+// Mission types
+export type MissionStatus =
   | 'scheduled'
   | 'en_route'
   | 'checked_in'
   | 'in_progress'
   | 'pending_signature'
+  | 'pending_verification'
   | 'completed'
   | 'cancelled';
 
 export type PhotoType = 'before' | 'during' | 'after' | 'issue';
 
-export interface Job {
+export interface Mission {
   id: string;
   orderId: string;
   plumberId: string;
-  status: JobStatus;
+  status: MissionStatus;
   checkinTime?: string;
   checkinLat?: number;
   checkinLng?: number;
@@ -212,7 +247,7 @@ export interface Job {
   createdAt: string;
 }
 
-export interface JobPhoto {
+export interface MissionPhoto {
   id: string;
   photoUrl: string;
   photoType: PhotoType;
@@ -281,6 +316,12 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   isPlumber?: boolean;
+  companyName?: string;
+  siren?: string;
+  siret?: string;
+  department?: string;
+  serviceAreaLat?: number;
+  serviceAreaLng?: number;
 }
 
 export interface TokenResponse {

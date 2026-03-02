@@ -52,8 +52,8 @@ export const adminApi = {
         pendingBookings: number;
         totalOrders: number;
         totalRevenue: number;
-        todayJobs: number;
-        completedJobs: number;
+        todayMissions: number;
+        completedMissions: number;
         byDepartment: {
           department: string;
           plumbers: number;
@@ -115,6 +115,13 @@ export const adminApi = {
           center: { lat: number; lng: number };
         }[];
       }>('/admin/coverage/stats'),
+    computeDeadZones: (data: DeadZoneRequest) =>
+      request<DeadZoneResponse>('/admin/coverage/dead-zones', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getDepartmentBoundary: (dept: string) =>
+      request<{ geojson: object }>(`/admin/coverage/boundary/${dept}`),
   },
 
   // Customers
@@ -144,13 +151,13 @@ export const adminApi = {
     get: (id: string) => request<OrderFull>(`/admin/orders/${id}`),
   },
 
-  // Jobs
-  jobs: {
+  // Missions
+  missions: {
     list: (params?: { status?: string; plumberId?: string; page?: number }) => {
       const query = new URLSearchParams(params as unknown as Record<string, string>).toString();
-      return request<{ items: JobFull[]; total: number }>(`/admin/jobs${query ? `?${query}` : ''}`);
+      return request<{ items: MissionFull[]; total: number }>(`/admin/missions${query ? `?${query}` : ''}`);
     },
-    get: (id: string) => request<JobFull>(`/admin/jobs/${id}`),
+    get: (id: string) => request<MissionFull>(`/admin/missions/${id}`),
   },
 
   // Invoices
@@ -205,6 +212,26 @@ export const adminApi = {
         method: 'POST',
         body: JSON.stringify({ address, department }),
       }),
+  },
+
+  // Projects
+  projects: {
+    list: (status?: string) => {
+      const query = status ? `?status_filter=${status}` : '';
+      return request<ProjectAdmin[]>(`/admin/projects${query}`);
+    },
+    get: (id: string) => request<ProjectAdmin>(`/admin/projects/${id}`),
+    create: (data: ProjectCreate) =>
+      request<ProjectAdmin>('/admin/projects', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Partial<ProjectCreate>) =>
+      request<ProjectAdmin>(`/admin/projects/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    getStats: (id: string) => request<ProjectStatsAdmin>(`/admin/projects/${id}/stats`),
   },
 
   // Audit logs
@@ -295,7 +322,7 @@ interface PlumberWithUser {
   serviceAreaLng?: number;
   serviceAreaRadiusKm: number;
   interventionLocations: InterventionLocation[];
-  totalJobsCompleted: number;
+  totalMissionsCompleted: number;
   averageRating?: number;
   totalRatings: number;
   stripeChargesEnabled: boolean;
@@ -379,7 +406,7 @@ interface OrderFull {
   createdAt: string;
 }
 
-interface JobFull {
+interface MissionFull {
   id: string;
   orderId: string;
   plumberId: string;
@@ -412,6 +439,40 @@ interface InvoiceFull {
   status: string;
   issuedAt: string;
   paidAt?: string;
+}
+
+interface ProjectAdmin {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'internal' | 'marketplace';
+  status: 'draft' | 'active' | 'paused' | 'archived';
+  description?: string;
+  department?: string;
+  landingPageUrl?: string;
+  marketingConfig?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface ProjectStatsAdmin {
+  id: string;
+  name: string;
+  slug: string;
+  productCount: number;
+  bookingCount: number;
+  orderCount: number;
+  revenue: number;
+}
+
+interface ProjectCreate {
+  name: string;
+  slug: string;
+  type?: 'internal' | 'marketplace';
+  status?: 'draft' | 'active' | 'paused' | 'archived';
+  description?: string;
+  department?: string;
+  landingPageUrl?: string;
 }
 
 interface ProductAdmin {
@@ -557,6 +618,29 @@ interface GeocodeResult {
   skipped: number;
 }
 
+// Dead zone types
+interface DeadZoneRequest {
+  department: string;
+  mode: 'distance' | 'time';
+  threshold: number;
+  extra_locations?: { lat: number; lng: number }[];
+  include_plumbers?: boolean;
+  force?: boolean;
+}
+
+interface DeadZoneResponse {
+  department: string;
+  mode: string;
+  threshold: number;
+  geojson: object | null;
+  stats: { department_area_km2: number; dead_zone_area_km2: number; coverage_percent: number };
+  plumber_count: number;
+  point_count: number;
+  compute_ms: number;
+  cached: boolean;
+  cached_at: string | null;
+}
+
 // Matching simulation types
 interface SimulatePointRequest {
   lat: number;
@@ -580,7 +664,7 @@ interface PlumberScoreItem {
   proximity_score: number;
   quality_score: number;
   load_score: number;
-  total_jobs_completed: number;
+  total_missions_completed: number;
   average_rating: number | null;
   total_ratings: number;
   lat: number;
@@ -597,14 +681,19 @@ interface SimulatePointResponse {
 }
 
 export type {
+  ProjectAdmin,
+  ProjectStatsAdmin,
+  ProjectCreate as ProjectCreateData,
   PlumberWithUser,
   InterventionLocation,
   PlumberLocation,
   BookingLocation,
+  DeadZoneRequest,
+  DeadZoneResponse,
   CustomerWithUser,
   BookingFull,
   OrderFull,
-  JobFull,
+  MissionFull,
   InvoiceFull,
   ProductAdmin,
   ProductCreate,

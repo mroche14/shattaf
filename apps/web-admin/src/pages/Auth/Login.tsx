@@ -57,9 +57,9 @@ const LoginPage: React.FC = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-2xl">S</span>
+            <span className="text-white font-bold text-2xl">R</span>
           </div>
-          <h1 className="font-display text-2xl font-bold">Shattaf Admin</h1>
+          <h1 className="font-display text-2xl font-bold">Réseau Plomb Admin</h1>
           <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>Connexion au backoffice</p>
         </div>
 
@@ -85,7 +85,7 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl pl-10 pr-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
                   style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
-                  placeholder="admin@shattaf.fr"
+                  placeholder="admin@reseau-plomb.fr"
                   required
                 />
               </div>

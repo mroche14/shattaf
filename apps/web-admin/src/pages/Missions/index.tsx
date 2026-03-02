@@ -22,20 +22,20 @@ const STATUS_CONFIG: Record<string, { label: string; class: string }> = {
   cancelled: { label: 'Annulée', class: 'badge-error' },
 };
 
-const JobsPage: React.FC = () => {
+const MissionsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['jobs', statusFilter, page],
+    queryKey: ['missions', statusFilter, page],
     queryFn: () =>
-      adminApi.jobs.list({
+      adminApi.missions.list({
         ...(statusFilter && { status: statusFilter }),
         page,
       }),
   });
 
-  const jobs = data?.items || [];
+  const missions = data?.items || [];
   const totalPages = Math.ceil((data?.total || 0) / 20);
 
   return (
@@ -97,26 +97,26 @@ const JobsPage: React.FC = () => {
                     </td>
                   </tr>
                 ))
-              ) : jobs.length > 0 ? (
-                jobs.map((job) => (
-                  <tr key={job.id}>
+              ) : missions.length > 0 ? (
+                missions.map((mission) => (
+                  <tr key={mission.id}>
                     <td>
                       <span className="font-mono text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {job.id.slice(0, 8)}...
+                        {mission.id.slice(0, 8)}...
                       </span>
                     </td>
                     <td>
-                      {job.plumber ? (
+                      {mission.plumber ? (
                         <Link
-                          to={`/plumbers/${job.plumberId}`}
+                          to={`/plumbers/${mission.plumberId}`}
                           className="flex items-center gap-2 hover:text-indigo-400"
                         >
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                            {job.plumber.user.firstName.charAt(0)}
-                            {job.plumber.user.lastName.charAt(0)}
+                            {mission.plumber.user.firstName.charAt(0)}
+                            {mission.plumber.user.lastName.charAt(0)}
                           </div>
                           <span>
-                            {job.plumber.user.firstName} {job.plumber.user.lastName}
+                            {mission.plumber.user.firstName} {mission.plumber.user.lastName}
                           </span>
                         </Link>
                       ) : (
@@ -125,22 +125,22 @@ const JobsPage: React.FC = () => {
                     </td>
                     <td>
                       <span
-                        className={`badge ${STATUS_CONFIG[job.status]?.class || 'badge-info'}`}
+                        className={`badge ${STATUS_CONFIG[mission.status]?.class || 'badge-info'}`}
                       >
-                        {STATUS_CONFIG[job.status]?.label || job.status}
+                        {STATUS_CONFIG[mission.status]?.label || mission.status}
                       </span>
                     </td>
                     <td>
                       <div className="flex items-center gap-1 text-sm">
                         <Calendar className="w-4 h-4 text-[var(--text-tertiary)]" />
-                        {new Date(job.scheduledDate).toLocaleDateString('fr-FR')}
+                        {new Date(mission.scheduledDate).toLocaleDateString('fr-FR')}
                       </div>
                     </td>
                     <td>
-                      {job.checkinTime ? (
+                      {mission.checkinTime ? (
                         <div className="flex items-center gap-1 text-sm">
                           <MapPin className="w-4 h-4 text-emerald-400" />
-                          {new Date(job.checkinTime).toLocaleTimeString('fr-FR', {
+                          {new Date(mission.checkinTime).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
@@ -150,10 +150,10 @@ const JobsPage: React.FC = () => {
                       )}
                     </td>
                     <td>
-                      {job.startTime ? (
+                      {mission.startTime ? (
                         <div className="flex items-center gap-1 text-sm">
                           <Clock className="w-4 h-4 text-cyan-400" />
-                          {new Date(job.startTime).toLocaleTimeString('fr-FR', {
+                          {new Date(mission.startTime).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
@@ -163,10 +163,10 @@ const JobsPage: React.FC = () => {
                       )}
                     </td>
                     <td>
-                      {job.completedAt ? (
+                      {mission.completedAt ? (
                         <div className="flex items-center gap-1 text-sm text-emerald-400">
                           <Clock className="w-4 h-4" />
-                          {new Date(job.completedAt).toLocaleTimeString('fr-FR', {
+                          {new Date(mission.completedAt).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
@@ -178,10 +178,10 @@ const JobsPage: React.FC = () => {
                     <td>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-cyan-400">
-                          {job.photoBeforeUrls.length} avant
+                          {mission.photoBeforeUrls.length} avant
                         </span>
                         <span className="text-emerald-400">
-                          {job.photoAfterUrls.length} après
+                          {mission.photoAfterUrls.length} après
                         </span>
                       </div>
                     </td>
@@ -233,4 +233,4 @@ const JobsPage: React.FC = () => {
   );
 };
 
-export default JobsPage;
+export default MissionsPage;

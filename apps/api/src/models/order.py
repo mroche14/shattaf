@@ -86,7 +86,7 @@ class OrderItem(BaseModel, table=True):
     __tablename__ = "order_items"
 
     order_id: UUID = Field(foreign_key="orders.id", index=True)
-    product_id: UUID = Field(foreign_key="products.id")
+    product_id: Optional[UUID] = Field(default=None, foreign_key="products.id")
 
     # Snapshot at order time
     product_name: str

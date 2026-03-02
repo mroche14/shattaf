@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import L from 'leaflet';
-import { Map, Filter, Users, MapPin, AlertCircle, UserPlus, Crosshair, RotateCcw, Search, Loader2 } from 'lucide-react';
-import { adminApi, PlumberLocation, BookingLocation, ProspectMapItem, PlumberScoreItem } from '../../api/client';
+import { Map, Users, MapPin, AlertCircle, UserPlus, Crosshair, RotateCcw, Search, Loader2, ShieldOff, Play } from 'lucide-react';
+import { adminApi, PlumberLocation, BookingLocation, ProspectMapItem, PlumberScoreItem, DeadZoneResponse } from '../../api/client';
 
 // Ensure Leaflet CSS is loaded
 import 'leaflet/dist/leaflet.css';
@@ -115,13 +115,17 @@ interface CoverageMapProps {
   prospects: ProspectMapItem[] | undefined;
   showPlumbers: boolean;
   showBookings: boolean;
-  showServiceAreas: boolean;
   showInterventions: boolean;
   showProspects: boolean;
   simulationMode: boolean;
   simulationPoint: { lat: number; lng: number } | null;
   simulationResults: PlumberScoreItem[] | undefined;
+  simulationTab: 'plumbers' | 'prospects';
+  nearbyProspects: NearbyProspect[];
   onMapClick: (lat: number, lng: number) => void;
+  deadZoneGeoJson: object | null;
+  showDeadZones: boolean;
+  departmentBoundary: object | null;
 }
 
 const CoverageMap: React.FC<CoverageMapProps> = ({
@@ -131,18 +135,23 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
   prospects,
   showPlumbers,
   showBookings,
-  showServiceAreas,
   showInterventions,
   showProspects,
   simulationMode,
   simulationPoint,
   simulationResults,
+  simulationTab,
+  nearbyProspects,
   onMapClick,
+  deadZoneGeoJson,
+  showDeadZones,
+  departmentBoundary,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
   const simulationLayerRef = useRef<L.LayerGroup | null>(null);
+  const deadZoneLayerRef = useRef<L.LayerGroup | null>(null);
   // Stable ref for the click handler to avoid stale closures
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
@@ -164,6 +173,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
     mapRef.current = map;
     markersRef.current = L.layerGroup().addTo(map);
     simulationLayerRef.current = L.layerGroup().addTo(map);
+    deadZoneLayerRef.current = L.layerGroup().addTo(map);
 
     // Click handler uses ref to always get fresh callback
     map.on('click', (e: L.LeafletMouseEvent) => {
@@ -176,6 +186,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
         mapRef.current = null;
         markersRef.current = null;
         simulationLayerRef.current = null;
+        deadZoneLayerRef.current = null;
       }
     };
   }, []);
@@ -213,17 +224,6 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
     if (showPlumbers && plumbers) {
       plumbers.forEach((plumber) => {
         if (plumber.lat && plumber.lng) {
-          // Service area circle
-          if (showServiceAreas) {
-            L.circle([plumber.lat, plumber.lng], {
-              radius: plumber.radius * 1000,
-              color: '#f59e0b',
-              fillColor: '#f59e0b',
-              fillOpacity: 0.08,
-              weight: 1,
-            }).addTo(markersRef.current!);
-          }
-
           // Plumber marker
           const marker = L.marker([plumber.lat, plumber.lng], { icon: plumberIcon });
           marker.bindPopup(`
@@ -304,7 +304,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
         marker.addTo(markersRef.current!);
       });
     }
-  }, [plumbers, bookings, prospects, showPlumbers, showBookings, showServiceAreas, showInterventions, showProspects]);
+  }, [plumbers, bookings, prospects, showPlumbers, showBookings, showInterventions, showProspects]);
 
   // Update simulation overlay (separate layer so it doesn't flicker with data markers)
   useEffect(() => {
@@ -325,31 +325,91 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
     `);
     simMarker.addTo(simulationLayerRef.current);
 
-    // Dashed lines from each matched plumber to the simulation point
-    if (simulationResults && simulationResults.length > 0) {
-      simulationResults.forEach((result) => {
-        const opacity = Math.max(0.15, 0.7 - (result.rank - 1) * 0.1);
-        const line = L.polyline(
-          [
-            [result.lat, result.lng],
-            [simulationPoint.lat, simulationPoint.lng],
-          ],
-          {
-            color: '#ec4899',
-            weight: 2,
-            dashArray: '5, 10',
-            opacity,
-          }
-        );
-        line.bindTooltip(`#${result.rank} ${result.name} — ${result.distance_km.toFixed(1)} km`, {
-          permanent: false,
-          direction: 'center',
-          className: 'leaflet-tooltip-sim',
+    // Highlight top 3 from the active tab with large ranked circles
+    const RANK_FILLS = ['#facc15', '#9ca3af', '#d97706']; // gold, silver, bronze
+    const RANK_STROKES = ['#a16207', '#4b5563', '#92400e'];
+
+    if (simulationTab === 'plumbers' && simulationResults && simulationResults.length > 0) {
+      simulationResults.slice(0, 3).forEach((result, i) => {
+        const size = 28 - i * 4; // 28, 24, 20
+        const icon = new L.Icon({
+          iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+              <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${RANK_FILLS[i]}" stroke="${RANK_STROKES[i]}" stroke-width="2.5"/>
+              <text x="${size/2}" y="${size/2}" text-anchor="middle" dominant-baseline="central" font-size="${size * 0.45}" font-weight="bold" fill="${RANK_STROKES[i]}" font-family="sans-serif">${i + 1}</text>
+            </svg>
+          `),
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+          popupAnchor: [0, -size / 2],
         });
-        line.addTo(simulationLayerRef.current!);
+        const marker = L.marker([result.lat, result.lng], { icon, zIndexOffset: 1000 - i });
+        marker.bindPopup(`
+          <div style="min-width: 160px;">
+            <h4 style="font-weight: bold; margin-bottom: 2px;">#${result.rank} ${result.name}</h4>
+            <p style="color: #6b7280; font-size: 0.85em; margin: 2px 0;">${result.distance_km.toFixed(1)} km · Score: ${result.total_score.toFixed(1)}</p>
+          </div>
+        `);
+        marker.addTo(simulationLayerRef.current!);
+      });
+    } else if (simulationTab === 'prospects' && nearbyProspects.length > 0) {
+      nearbyProspects.slice(0, 3).forEach((np, i) => {
+        const size = 28 - i * 4;
+        const icon = new L.Icon({
+          iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+              <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${RANK_FILLS[i]}" stroke="${RANK_STROKES[i]}" stroke-width="2.5"/>
+              <text x="${size/2}" y="${size/2}" text-anchor="middle" dominant-baseline="central" font-size="${size * 0.45}" font-weight="bold" fill="${RANK_STROKES[i]}" font-family="sans-serif">${i + 1}</text>
+            </svg>
+          `),
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+          popupAnchor: [0, -size / 2],
+        });
+        const marker = L.marker([np.prospect.lat, np.prospect.lng], { icon, zIndexOffset: 1000 - i });
+        marker.bindPopup(`
+          <div style="min-width: 160px;">
+            <h4 style="font-weight: bold; margin-bottom: 2px;">#${i + 1} ${np.prospect.name}</h4>
+            <p style="color: #6b7280; font-size: 0.85em; margin: 2px 0;">${np.distance_km.toFixed(1)} km · ${np.prospect.ville || ''}</p>
+          </div>
+        `);
+        marker.addTo(simulationLayerRef.current!);
       });
     }
-  }, [simulationMode, simulationPoint, simulationResults]);
+  }, [simulationMode, simulationPoint, simulationResults, simulationTab, nearbyProspects]);
+
+  // Update dead zone overlay
+  useEffect(() => {
+    if (!deadZoneLayerRef.current) return;
+    deadZoneLayerRef.current.clearLayers();
+
+    if (!showDeadZones) return;
+
+    // Render department boundary outline (dashed gray)
+    if (departmentBoundary) {
+      L.geoJSON(departmentBoundary as GeoJSON.GeoJsonObject, {
+        style: {
+          color: '#6b7280',
+          weight: 2,
+          dashArray: '6, 4',
+          fillOpacity: 0,
+        },
+      }).addTo(deadZoneLayerRef.current);
+    }
+
+    // Render dead zone polygons (red semi-transparent)
+    if (deadZoneGeoJson) {
+      L.geoJSON(deadZoneGeoJson as GeoJSON.GeoJsonObject, {
+        style: {
+          color: '#ef4444',
+          weight: 1.5,
+          fillColor: '#ef4444',
+          fillOpacity: 0.25,
+          dashArray: '4, 4',
+        },
+      }).addTo(deadZoneLayerRef.current);
+    }
+  }, [showDeadZones, deadZoneGeoJson, departmentBoundary]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 };
@@ -358,21 +418,29 @@ const CoveragePage: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('971');
   const [showPlumbers, setShowPlumbers] = useState(true);
   const [showBookings, setShowBookings] = useState(true);
-  const [showServiceAreas, setShowServiceAreas] = useState(true);
   const [showInterventions, setShowInterventions] = useState(true);
   const [showProspects, setShowProspects] = useState(false);
 
-  // Prospect filter states
-  const [prospectType, setProspectType] = useState<string>('all');
+  // Prospect filter states (default: indépendants with phone)
+  const [prospectType, setProspectType] = useState<string>('independant');
   const [prospectStatus, setProspectStatus] = useState<string>('all');
-  const [prospectHasPhone, setProspectHasPhone] = useState(false);
+  const [prospectHasPhone, setProspectHasPhone] = useState(true);
   const [prospectHasEmail, setProspectHasEmail] = useState(false);
+
+  // Dead zone state
+  const [showDeadZones, setShowDeadZones] = useState(false);
+  const [deadZoneMode, setDeadZoneMode] = useState<'distance' | 'time'>('distance');
+  const [deadZoneThreshold, setDeadZoneThreshold] = useState(20);
+  const [deadZoneResult, setDeadZoneResult] = useState<DeadZoneResponse | null>(null);
+  const [departmentBoundary, setDepartmentBoundary] = useState<object | null>(null);
+  const [deadZoneSource, setDeadZoneSource] = useState<'plumbers' | 'prospects' | 'both'>('plumbers');
 
   // Simulation state
   const [simulationMode, setSimulationMode] = useState(false);
   const [simulationPoint, setSimulationPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [simulationLabel, setSimulationLabel] = useState<string>('');
   const [weights, setWeights] = useState({ proximity: 40, quality: 35, load: 25 });
+  const [simulationTab, setSimulationTab] = useState<'plumbers' | 'prospects'>('plumbers');
 
   // Debounce simulation params so sliders don't spam API calls
   const debouncedWeights = useDebounce(weights, 300);
@@ -387,16 +455,50 @@ const CoveragePage: React.FC = () => {
     queryFn: () => adminApi.coverage.getBookingLocations(selectedDepartment),
   });
 
+  const needProspects = showProspects || (showDeadZones && deadZoneSource !== 'plumbers');
   const { data: prospects } = useQuery({
     queryKey: ['coverageProspects', selectedDepartment],
     queryFn: () => adminApi.prospects.getMap(selectedDepartment),
-    enabled: showProspects,
+    enabled: needProspects,
   });
 
   const { data: coverageStats } = useQuery({
     queryKey: ['coverageStats'],
     queryFn: () => adminApi.coverage.getCoverageStats(),
   });
+
+  // Dead zone mutation (compute on demand)
+  const deadZoneMutation = useMutation({
+    mutationFn: (opts?: { force?: boolean }) => {
+      const includeProspects = deadZoneSource === 'prospects' || deadZoneSource === 'both';
+      const extra_locations = includeProspects && filteredProspects
+        ? filteredProspects.map((p) => ({ lat: p.lat, lng: p.lng }))
+        : undefined;
+      return adminApi.coverage.computeDeadZones({
+        department: selectedDepartment,
+        mode: deadZoneMode,
+        threshold: deadZoneThreshold,
+        include_plumbers: deadZoneSource !== 'prospects',
+        extra_locations,
+        force: opts?.force,
+      });
+    },
+    onSuccess: (data) => setDeadZoneResult(data),
+  });
+
+  // Fetch department boundary when dead zones toggle is active
+  useEffect(() => {
+    if (showDeadZones && selectedDepartment) {
+      adminApi.coverage.getDepartmentBoundary(selectedDepartment)
+        .then((data) => setDepartmentBoundary(data.geojson))
+        .catch(() => setDepartmentBoundary(null));
+    }
+  }, [showDeadZones, selectedDepartment]);
+
+  // Clear dead zone results when department or source changes
+  useEffect(() => {
+    setDeadZoneResult(null);
+  }, [selectedDepartment, deadZoneSource]);
 
   const { data: simulationResult, isLoading: simLoading, isFetching: simFetching } = useQuery({
     queryKey: ['matchingSimulation', simulationPoint, debouncedWeights, selectedDepartment],
@@ -511,13 +613,6 @@ const CoveragePage: React.FC = () => {
                 label="Réservations"
               />
               <FilterToggle
-                active={showServiceAreas}
-                onClick={() => setShowServiceAreas(!showServiceAreas)}
-                color="amber"
-                icon={<Filter className="w-4 h-4" />}
-                label="Zones"
-              />
-              <FilterToggle
                 active={showInterventions}
                 onClick={() => setShowInterventions(!showInterventions)}
                 color="green"
@@ -532,6 +627,13 @@ const CoveragePage: React.FC = () => {
                 label="Prospects"
               />
               <FilterToggle
+                active={showDeadZones}
+                onClick={() => setShowDeadZones(!showDeadZones)}
+                color="red"
+                icon={<ShieldOff className="w-4 h-4" />}
+                label="Zones mortes"
+              />
+              <FilterToggle
                 active={simulationMode}
                 onClick={toggleSimulation}
                 color="pink"
@@ -542,8 +644,8 @@ const CoveragePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Prospect filters */}
-        {showProspects && (
+        {/* Prospect filters (shown when prospects layer or dead zone source uses prospects) */}
+        {(showProspects || (showDeadZones && deadZoneSource !== 'plumbers')) && (
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <select
               value={prospectType}
@@ -589,24 +691,143 @@ const CoveragePage: React.FC = () => {
           </div>
         )}
 
+        {/* Dead zone controls */}
+        {showDeadZones && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <select
+              value={deadZoneSource}
+              onChange={(e) => setDeadZoneSource(e.target.value as 'plumbers' | 'prospects' | 'both')}
+              className="rounded-lg px-3 py-1.5 text-sm outline-none transition-colors"
+              style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+            >
+              <option value="plumbers">Plombiers actifs</option>
+              <option value="prospects">Prospects</option>
+              <option value="both">Plombiers + Prospects</option>
+            </select>
+            <select
+              value={deadZoneMode}
+              onChange={(e) => {
+                const mode = e.target.value as 'distance' | 'time';
+                setDeadZoneMode(mode);
+                setDeadZoneThreshold(mode === 'distance' ? 20 : 30);
+              }}
+              className="rounded-lg px-3 py-1.5 text-sm outline-none transition-colors"
+              style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+            >
+              <option value="distance">Distance (buffer)</option>
+              <option value="time">Temps (isochrone)</option>
+            </select>
+            <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-[300px]">
+              <input
+                type="range"
+                min={deadZoneMode === 'distance' ? 5 : 10}
+                max={deadZoneMode === 'distance' ? 50 : 60}
+                step={deadZoneMode === 'distance' ? 5 : 5}
+                value={deadZoneThreshold}
+                onChange={(e) => setDeadZoneThreshold(Number(e.target.value))}
+                className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #ef4444 ${
+                    ((deadZoneThreshold - (deadZoneMode === 'distance' ? 5 : 10)) /
+                      ((deadZoneMode === 'distance' ? 50 : 60) - (deadZoneMode === 'distance' ? 5 : 10))) *
+                    100
+                  }%, #374151 ${
+                    ((deadZoneThreshold - (deadZoneMode === 'distance' ? 5 : 10)) /
+                      ((deadZoneMode === 'distance' ? 50 : 60) - (deadZoneMode === 'distance' ? 5 : 10))) *
+                    100
+                  }%)`,
+                }}
+              />
+              <span className="text-sm font-mono min-w-[60px] text-right" style={{ color: 'var(--text-main)' }}>
+                {deadZoneThreshold} {deadZoneMode === 'distance' ? 'km' : 'min'}
+              </span>
+            </div>
+            <button
+              onClick={() => deadZoneMutation.mutate({})}
+              disabled={deadZoneMutation.isPending}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {deadZoneMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              Calculer
+            </button>
+            {deadZoneResult && (
+              <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <span>
+                  Couverture: <strong className="text-emerald-400">{deadZoneResult.stats.coverage_percent}%</strong>
+                </span>
+                <span>
+                  Zone morte: <strong className="text-red-400">{deadZoneResult.stats.dead_zone_area_km2} km²</strong>
+                </span>
+                <span>
+                  Dept: <strong>{deadZoneResult.stats.department_area_km2} km²</strong>
+                </span>
+                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  ({deadZoneSource === 'plumbers'
+                    ? `${deadZoneResult.plumber_count} plombier${deadZoneResult.plumber_count > 1 ? 's' : ''}`
+                    : deadZoneSource === 'prospects'
+                      ? `${deadZoneResult.point_count} prospect${deadZoneResult.point_count > 1 ? 's' : ''}`
+                      : `${deadZoneResult.plumber_count} plombier${deadZoneResult.plumber_count > 1 ? 's' : ''} + ${deadZoneResult.point_count - deadZoneResult.plumber_count} prospect${(deadZoneResult.point_count - deadZoneResult.plumber_count) > 1 ? 's' : ''}`
+                  })
+                </span>
+                {deadZoneResult.cached ? (
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
+                    Cache
+                    {deadZoneResult.cached_at && (
+                      <span>({new Date(deadZoneResult.cached_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})</span>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deadZoneMutation.mutate({ force: true }); }}
+                      disabled={deadZoneMutation.isPending}
+                      className="ml-0.5 hover:text-blue-300 transition-colors"
+                      title="Recalculer (ignorer le cache)"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  </span>
+                ) : deadZoneResult.compute_ms > 0 ? (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                    {deadZoneResult.compute_ms < 1000
+                      ? `${deadZoneResult.compute_ms}ms`
+                      : `${(deadZoneResult.compute_ms / 1000).toFixed(1)}s`}
+                  </span>
+                ) : null}
+              </div>
+            )}
+            {deadZoneMutation.isError && (
+              <span className="text-sm text-red-400">
+                {deadZoneMutation.error?.message || 'Erreur lors du calcul'}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Stats bar */}
         {currentDeptStats && (
           <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="stat-card p-3">
-              <p className="text-2xl font-bold text-indigo-400">{currentDeptStats.plumberCount}</p>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Plombiers actifs</p>
+            <div className="stat-card p-4 flex flex-col items-center text-center relative">
+              <p className="text-xl font-bold mb-1" style={{ color: 'var(--text-main)' }}>Plombiers actifs</p>
+              <p className="text-3xl font-bold text-indigo-400">{currentDeptStats.plumberCount}</p>
             </div>
-            <div className="stat-card p-3">
-              <p className="text-2xl font-bold text-cyan-400">{currentDeptStats.bookingCount}</p>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Réservations</p>
+            <div className="stat-card p-4 flex flex-col items-center text-center relative">
+              <p className="text-xl font-bold mb-1" style={{ color: 'var(--text-main)' }}>Réservations</p>
+              <p className="text-3xl font-bold text-cyan-400">{currentDeptStats.bookingCount}</p>
             </div>
-            <div className="stat-card p-3">
-              <p className="text-2xl font-bold text-emerald-400">{currentDeptStats.coverageScore}%</p>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Score couverture</p>
+            <div className="stat-card p-4 flex flex-col items-center text-center relative">
+              <p className="text-xl font-bold mb-1" style={{ color: 'var(--text-main)' }}>Score couverture</p>
+              <p className="text-3xl font-bold text-emerald-400">{currentDeptStats.coverageScore}%</p>
             </div>
-            <div className="stat-card p-3">
-              <p className="text-2xl font-bold text-orange-400">{filteredProspects?.length || 0}</p>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Prospects</p>
+            <div className="stat-card p-4 flex flex-col items-center text-center relative">
+              <p className="text-xl font-bold mb-1" style={{ color: 'var(--text-main)' }}>Prospects</p>
+              <p className="text-3xl font-bold text-orange-400">{filteredProspects?.length || 0}</p>
+              {filteredProspects && prospects && filteredProspects.length !== prospects.length && (
+                <span className="absolute bottom-1.5 right-2.5 text-xs font-semibold text-orange-300/80">
+                  / {prospects.length}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -622,13 +843,17 @@ const CoveragePage: React.FC = () => {
           prospects={filteredProspects}
           showPlumbers={showPlumbers}
           showBookings={showBookings}
-          showServiceAreas={showServiceAreas}
           showInterventions={showInterventions}
           showProspects={showProspects}
           simulationMode={simulationMode}
           simulationPoint={simulationPoint}
           simulationResults={simulationResult?.results}
+          simulationTab={simulationTab}
+          nearbyProspects={nearbyProspects}
           onMapClick={handleMapClick}
+          deadZoneGeoJson={deadZoneResult?.geojson || null}
+          showDeadZones={showDeadZones}
+          departmentBoundary={departmentBoundary}
         />
 
         {/* Simulation results panel */}
@@ -644,13 +869,12 @@ const CoveragePage: React.FC = () => {
             onGeocode={(address) => geocodeMutation.mutate(address)}
             geocoding={geocodeMutation.isPending}
             geocodeError={geocodeMutation.error?.message}
+            onReset={() => { setSimulationPoint(null); setSimulationLabel(''); }}
             // Map layer toggles
             showPlumbers={showPlumbers}
             onShowPlumbersChange={setShowPlumbers}
             showBookings={showBookings}
             onShowBookingsChange={setShowBookings}
-            showServiceAreas={showServiceAreas}
-            onShowServiceAreasChange={setShowServiceAreas}
             showInterventions={showInterventions}
             onShowInterventionsChange={setShowInterventions}
             showProspects={showProspects}
@@ -665,6 +889,8 @@ const CoveragePage: React.FC = () => {
             prospectHasEmail={prospectHasEmail}
             onProspectHasEmailChange={setProspectHasEmail}
             nearbyProspects={nearbyProspects}
+            activeTab={simulationTab}
+            onActiveTabChange={setSimulationTab}
           />
         )}
 
@@ -688,10 +914,10 @@ const CoveragePage: React.FC = () => {
               <div className="w-2.5 h-2.5 rounded-full bg-orange-500 border border-white shadow" />
               <span className="text-gray-600">Prospects</span>
             </div>
-            {showServiceAreas && (
+            {showDeadZones && (
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-500/20" />
-                <span className="text-gray-600">Zone de service</span>
+                <div className="w-4 h-3 rounded border-2 border-dashed border-red-500 bg-red-500/25" />
+                <span className="text-gray-600">Zone morte</span>
               </div>
             )}
             {simulationMode && (
@@ -701,8 +927,12 @@ const CoveragePage: React.FC = () => {
                   <span className="text-gray-600">Point de simulation</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-0 border-t-2 border-dashed border-pink-500" />
-                  <span className="text-gray-600">Liaison matching</span>
+                  <div className="flex gap-0.5">
+                    <div className="w-3.5 h-3.5 rounded-full bg-yellow-400 border border-yellow-700 text-[7px] font-bold text-yellow-800 flex items-center justify-center">1</div>
+                    <div className="w-3 h-3 rounded-full bg-gray-300 border border-gray-500 text-[6px] font-bold text-gray-600 flex items-center justify-center">2</div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-600 border border-amber-800 text-[5px] font-bold text-amber-100 flex items-center justify-center">3</div>
+                  </div>
+                  <span className="text-gray-600">Top 3</span>
                 </div>
               </>
             )}
@@ -737,13 +967,12 @@ interface SimulationPanelProps {
   onGeocode: (address: string) => void;
   geocoding: boolean;
   geocodeError?: string;
+  onReset: () => void;
   // Map layer toggles
   showPlumbers: boolean;
   onShowPlumbersChange: (v: boolean) => void;
   showBookings: boolean;
   onShowBookingsChange: (v: boolean) => void;
-  showServiceAreas: boolean;
-  onShowServiceAreasChange: (v: boolean) => void;
   showInterventions: boolean;
   onShowInterventionsChange: (v: boolean) => void;
   showProspects: boolean;
@@ -758,6 +987,8 @@ interface SimulationPanelProps {
   prospectHasEmail: boolean;
   onProspectHasEmailChange: (v: boolean) => void;
   nearbyProspects: NearbyProspect[];
+  activeTab: 'plumbers' | 'prospects';
+  onActiveTabChange: (tab: 'plumbers' | 'prospects') => void;
 }
 
 const SimulationPanel: React.FC<SimulationPanelProps> = ({
@@ -771,12 +1002,11 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
   onGeocode,
   geocoding,
   geocodeError,
+  onReset,
   showPlumbers,
   onShowPlumbersChange,
   showBookings,
   onShowBookingsChange,
-  showServiceAreas,
-  onShowServiceAreasChange,
   showInterventions,
   onShowInterventionsChange,
   showProspects,
@@ -790,9 +1020,10 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
   prospectHasEmail,
   onProspectHasEmailChange,
   nearbyProspects,
+  activeTab,
+  onActiveTabChange,
 }) => {
   const [addressInput, setAddressInput] = useState('');
-  const [activeTab, setActiveTab] = useState<'plumbers' | 'prospects'>('plumbers');
 
   const RANK_COLORS: Record<number, string> = {
     1: 'bg-yellow-400 text-yellow-900',
@@ -811,10 +1042,21 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
     <div className="absolute top-4 right-4 w-80 z-[1000] bg-white/95 backdrop-blur border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-[calc(100%-2rem)] flex flex-col">
       {/* Header */}
       <div className="p-3 border-b border-gray-100">
-        <h4 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
-          <Crosshair className="w-4 h-4 text-pink-500" />
-          Simulation matching
-        </h4>
+        <div className="flex items-center justify-between">
+          <h4 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
+            <Crosshair className="w-4 h-4 text-pink-500" />
+            Simulation matching
+          </h4>
+          {point && (
+            <button
+              onClick={onReset}
+              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title="Réinitialiser la simulation"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* Address search */}
         <form onSubmit={handleAddressSubmit} className="mt-2 flex gap-1.5">
@@ -868,7 +1110,6 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           <MiniToggle active={showPlumbers} onClick={() => onShowPlumbersChange(!showPlumbers)} color="#6366f1" label="Plombiers" />
           <MiniToggle active={showBookings} onClick={() => onShowBookingsChange(!showBookings)} color="#06b6d4" label="Réservations" />
-          <MiniToggle active={showServiceAreas} onClick={() => onShowServiceAreasChange(!showServiceAreas)} color="#f59e0b" label="Zones" />
           <MiniToggle active={showInterventions} onClick={() => onShowInterventionsChange(!showInterventions)} color="#22c55e" label="Interventions" />
           <MiniToggle active={showProspects} onClick={() => onShowProspectsChange(!showProspects)} color="#f97316" label="Prospects" />
         </div>
@@ -959,7 +1200,7 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
       {point && (
         <div className="flex border-b border-gray-100">
           <button
-            onClick={() => setActiveTab('plumbers')}
+            onClick={() => onActiveTabChange('plumbers')}
             className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
               activeTab === 'plumbers'
                 ? 'text-pink-600 border-b-2 border-pink-500 bg-pink-50/50'
@@ -969,7 +1210,7 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
             Plombiers {results ? `(${results.length})` : ''}
           </button>
           <button
-            onClick={() => setActiveTab('prospects')}
+            onClick={() => onActiveTabChange('prospects')}
             className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
               activeTab === 'prospects'
                 ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
@@ -1015,7 +1256,7 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
                       <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
                         <span>{r.distance_km.toFixed(1)} km</span>
                         <span>{r.average_rating ? `${r.average_rating.toFixed(1)}★` : 'N/A'} ({r.total_ratings})</span>
-                        <span>{r.total_jobs_completed} jobs</span>
+                        <span>{r.total_missions_completed} missions</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5">
                         <ScoreBar value={r.proximity_score} color="bg-blue-500" label="P" />
@@ -1165,6 +1406,7 @@ const FilterToggle: React.FC<FilterToggleProps> = ({ active, onClick, color, ico
     green: 'bg-green-500/20 border-green-500 text-green-300',
     orange: 'bg-orange-500/20 border-orange-500 text-orange-300',
     pink: 'bg-pink-500/20 border-pink-500 text-pink-300',
+    red: 'bg-red-500/20 border-red-500 text-red-300',
   };
 
   return (

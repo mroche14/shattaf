@@ -9,6 +9,13 @@ from sqlmodel import Field, Column, JSON
 from .base import BaseModel
 
 
+class BookingType(str, Enum):
+    """Booking type."""
+
+    PRODUCT = "product"  # Product-based booking (Shattaf, etc.)
+    MARKETPLACE = "marketplace"  # Free-form marketplace request
+
+
 class BookingStatus(str, Enum):
     """Booking status."""
 
@@ -33,6 +40,14 @@ class Booking(BaseModel, table=True):
 
     customer_id: UUID = Field(foreign_key="users.id", index=True)
     status: BookingStatus = Field(default=BookingStatus.DRAFT)
+
+    # Type and project
+    type: BookingType = Field(default=BookingType.PRODUCT)
+    project_id: Optional[UUID] = Field(default=None, foreign_key="projects.id", index=True)
+
+    # Marketplace fields (used when type=marketplace)
+    category: Optional[str] = None  # e.g. "plomberie_generale", "fuite", "installation"
+    description: Optional[str] = None  # Free-form description of the work needed
 
     # Location
     address_street: str

@@ -1,26 +1,27 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Wallet, User, Droplets } from 'lucide-react';
+import { Home, Briefcase, ClipboardCheck, Wallet, User, Droplets } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 
 const ProLayout: React.FC = () => {
   const location = useLocation();
 
-  // Fetch pending jobs count for badge
-  const { data: allJobs } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => apiClient.jobs.list(),
+  // Fetch pending missions count for badge
+  const { data: allMissions } = useQuery({
+    queryKey: ['missions'],
+    queryFn: () => apiClient.missions.list(),
     staleTime: 30000,
   });
 
-  const pendingCount = allJobs?.filter(
-    (j) => j.status === 'scheduled' || j.status === 'en_route'
+  const pendingCount = allMissions?.filter(
+    (m) => m.status === 'scheduled' || m.status === 'en_route'
   ).length || 0;
 
   const navItems = [
     { path: '/', icon: Home, label: 'Accueil', badge: 0 },
     { path: '/missions', icon: Briefcase, label: 'Missions', badge: pendingCount },
+    { path: '/verifications', icon: ClipboardCheck, label: 'Vérif.', badge: 0 },
     { path: '/earnings', icon: Wallet, label: 'Revenus', badge: 0 },
     { path: '/profile', icon: User, label: 'Profil', badge: 0 },
   ];
@@ -39,8 +40,8 @@ const ProLayout: React.FC = () => {
               <Droplets className="w-6 h-6 text-white" />
             </div>
             <div>
-              <span className="font-display font-bold text-lg" style={{ color: 'var(--text-main)' }}>SHATTAF</span>
-              <span className="text-cyan-500 font-bold text-lg ml-1">PRO</span>
+              <span className="font-display font-bold text-lg" style={{ color: 'var(--text-main)' }}>RESEAU</span>
+              <span className="text-cyan-500 font-bold text-lg ml-1">PLOMB</span>
             </div>
           </Link>
         </div>
@@ -96,7 +97,7 @@ const ProLayout: React.FC = () => {
         {/* Footer */}
         <div className="p-4" style={{ borderTop: '1px solid var(--border-color)' }}>
           <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
-            Shattaf Pro v1.0
+            Réseau Plomb v1.0
           </p>
         </div>
       </aside>

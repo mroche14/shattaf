@@ -22,7 +22,7 @@ const AuthLayout: React.FC = () => {
         <div className="flex items-center gap-2 mb-8">
           <Droplets className="w-10 h-10 text-cyan-400" />
           <span className="font-display font-bold text-2xl tracking-tighter">
-            OASIS <span className="text-cyan-400">SHATTAF</span>
+            RESEAU <span className="text-cyan-400">PLOMB</span>
           </span>
         </div>
 

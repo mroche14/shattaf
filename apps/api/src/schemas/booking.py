@@ -5,12 +5,21 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
 
-from ..models.booking import BookingStatus, ToiletType
+from ..models.booking import BookingType, BookingStatus, ToiletType
 
 
 class BookingCreate(BaseModel):
     """Booking creation request."""
 
+    # Booking type (product = project-linked, marketplace = free-form)
+    type: BookingType = BookingType.PRODUCT
+    project_id: Optional[UUID] = None  # Auto-set from product if not provided
+
+    # Marketplace fields (required when type=marketplace)
+    category: Optional[str] = None
+    description: Optional[str] = None
+
+    # Location (required for all bookings)
     address_street: str
     address_city: str
     address_postal_code: str
@@ -20,6 +29,8 @@ class BookingCreate(BaseModel):
     digicode: Optional[str] = None
     parking_available: bool = False
     access_notes: Optional[str] = None
+
+    # Product booking fields
     toilet_type: ToiletType = ToiletType.STANDARD
     shutoff_valve_accessible: bool = True
     additional_notes: Optional[str] = None
@@ -53,6 +64,10 @@ class BookingResponse(BaseModel):
 
     id: UUID
     customer_id: UUID
+    type: BookingType = BookingType.PRODUCT
+    project_id: Optional[UUID] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
     status: BookingStatus
     address_street: str
     address_city: str

@@ -68,17 +68,34 @@ class StripeService:
         except stripe.error.StripeError:
             return False
 
-    async def create_connect_account(self, email: str, country: str = "FR"):
+    async def create_connect_account(
+        self,
+        email: str,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        company_name: Optional[str] = None,
+        country: str = "FR",
+    ):
         """Create a Stripe Connect Express account for a plumber."""
-        return stripe.Account.create(
-            type="express",
-            country=country,
-            email=email,
-            capabilities={
+        params: dict = {
+            "type": "express",
+            "country": country,
+            "email": email,
+            "capabilities": {
                 "card_payments": {"requested": True},
                 "transfers": {"requested": True},
             },
-        )
+        }
+        if company_name:
+            params["business_profile"] = {"name": company_name}
+        if first_name or last_name:
+            params["individual"] = {}
+            if first_name:
+                params["individual"]["first_name"] = first_name
+            if last_name:
+                params["individual"]["last_name"] = last_name
+
+        return stripe.Account.create(**params)
 
     async def create_account_link(
         self,

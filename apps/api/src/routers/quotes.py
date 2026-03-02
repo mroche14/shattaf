@@ -8,9 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_session
 from ..models import User, UserRole, QuoteStatus
-from ..schemas import QuoteCreate, QuoteResponse, QuoteAccept
+from ..schemas import QuoteCreate, QuoteResponse, QuoteAccept, AiDevisRequest, AiDevisResponse, AiDevisLineItem
 from ..services.quote import QuoteService
 from ..services.booking import BookingService
+from ..services.ai_devis import generate_ai_devis, DOM_VAT_RATE
 from ..utils.deps import get_current_active_user
 
 router = APIRouter(prefix="/quotes", tags=["Quotes"])
@@ -230,3 +231,59 @@ async def reject_quote(
         )
 
     return result
+
+
+@router.post("/ai-draft", response_model=AiDevisResponse)
+async def generate_ai_draft(
+    data: AiDevisRequest,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Generate an AI-assisted devis draft (plumber only)."""
+    if current_user.role != UserRole.PLUMBER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only plumbers can generate AI devis",
+        )
+
+    # Fetch booking
+    booking_service = BookingService(session)
+    booking = await booking_service.get_booking(data.booking_id)
+
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found",
+        )
+
+    # Extract urgency from additional_notes if present
+    urgency = None
+    if booking.additional_notes and "Urgence:" in booking.additional_notes:
+        urgency = booking.additional_notes.split("Urgence:")[-1].strip()
+
+    # Generate AI devis
+    result = await generate_ai_devis(
+        category=booking.category or "plomberie_generale",
+        description=booking.description or "",
+        city=booking.address_city,
+        postal_code=booking.address_postal_code,
+        urgency=urgency,
+        plumber_notes=data.plumber_notes,
+    )
+
+    # Calculate totals
+    line_items = [AiDevisLineItem(**item) for item in result["line_items"]]
+    subtotal = sum(item.unit_price_cents * item.quantity for item in line_items)
+    vat_amount = int(subtotal * DOM_VAT_RATE)
+    total = subtotal + vat_amount
+
+    return AiDevisResponse(
+        line_items=line_items,
+        subtotal_cents=subtotal,
+        vat_amount_cents=vat_amount,
+        total_cents=total,
+        vat_rate=DOM_VAT_RATE,
+        estimated_duration_minutes=result.get("estimated_duration_minutes", 60),
+        confidence=result.get("confidence", 0.5),
+        reasoning=result.get("reasoning", ""),
+    )

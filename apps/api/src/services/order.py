@@ -16,8 +16,8 @@ from ..models import (
     QuoteStatus,
     Booking,
     Product,
-    Job,
-    JobStatus,
+    Mission,
+    MissionStatus,
 )
 from ..utils.db import uuid_column_eq
 
@@ -35,7 +35,11 @@ class OrderService:
         return f"ORD-{timestamp}-{unique_id}"
 
     async def create_order_from_quote(self, quote_id: UUID) -> Optional[Order]:
-        """Create order from an accepted quote."""
+        """Create order from an accepted quote.
+
+        Supports both product bookings (with product_id) and marketplace
+        bookings (no product, labor-only or plumber-supplied materials).
+        """
         result = await self.session.execute(
             select(Quote).where(uuid_column_eq(Quote.id, quote_id))
         )
@@ -49,16 +53,16 @@ class OrderService:
             select(Booking).where(uuid_column_eq(Booking.id, quote.booking_id))
         )
         booking = result.scalar_one_or_none()
-        if not booking or not booking.product_id:
+        if not booking:
             return None
 
-        # Get product
-        result = await self.session.execute(
-            select(Product).where(uuid_column_eq(Product.id, booking.product_id))
-        )
-        product = result.scalar_one_or_none()
-        if not product:
-            return None
+        # Get product if this is a product booking
+        product = None
+        if booking.product_id:
+            result = await self.session.execute(
+                select(Product).where(uuid_column_eq(Product.id, booking.product_id))
+            )
+            product = result.scalar_one_or_none()
 
         # Create order
         order = Order(
@@ -79,37 +83,63 @@ class OrderService:
         await self.session.flush()
 
         # Create order items
-        product_item = OrderItem(
-            order_id=order.id,
-            product_id=product.id,
-            product_name=product.name,
-            product_sku=product.sku,
-            unit_price=quote.product_price,
-            quantity=1,
-            total_price=quote.product_price,
-            is_installation=False,
-        )
-        self.session.add(product_item)
+        if product:
+            # Product booking: product item + installation item
+            product_item = OrderItem(
+                order_id=order.id,
+                product_id=product.id,
+                product_name=product.name,
+                product_sku=product.sku,
+                unit_price=quote.product_price,
+                quantity=1,
+                total_price=quote.product_price,
+                is_installation=False,
+            )
+            self.session.add(product_item)
 
-        installation_item = OrderItem(
-            order_id=order.id,
-            product_id=product.id,
-            product_name=f"Installation - {product.name}",
-            product_sku=f"{product.sku}-INST",
-            unit_price=quote.installation_price,
-            quantity=1,
-            total_price=quote.installation_price,
-            is_installation=True,
-        )
-        self.session.add(installation_item)
+            installation_item = OrderItem(
+                order_id=order.id,
+                product_id=product.id,
+                product_name=f"Installation - {product.name}",
+                product_sku=f"{product.sku}-INST",
+                unit_price=quote.installation_price,
+                quantity=1,
+                total_price=quote.installation_price,
+                is_installation=True,
+            )
+            self.session.add(installation_item)
+        else:
+            # Marketplace booking: single labor/service item
+            if quote.product_price > 0:
+                materials_item = OrderItem(
+                    order_id=order.id,
+                    product_name="Fournitures",
+                    product_sku="MARKETPLACE-MAT",
+                    unit_price=quote.product_price,
+                    quantity=1,
+                    total_price=quote.product_price,
+                    is_installation=False,
+                )
+                self.session.add(materials_item)
 
-        # Create job
-        job = Job(
+            labor_item = OrderItem(
+                order_id=order.id,
+                product_name=booking.category or "Intervention plomberie",
+                product_sku="MARKETPLACE-LABOR",
+                unit_price=quote.installation_price,
+                quantity=1,
+                total_price=quote.installation_price,
+                is_installation=True,
+            )
+            self.session.add(labor_item)
+
+        # Create mission
+        mission = Mission(
             order_id=order.id,
             plumber_id=quote.plumber_id,
-            status=JobStatus.SCHEDULED,
+            status=MissionStatus.SCHEDULED,
         )
-        self.session.add(job)
+        self.session.add(mission)
 
         await self.session.commit()
         await self.session.refresh(order)

@@ -178,7 +178,7 @@ async def _seed_test_users() -> None:
                 if user_data["role"] == "PLUMBER":
                     await conn.execute(
                         text("""
-                            INSERT INTO plumber_profiles (id, created_at, user_id, status, service_area_radius_km, total_jobs_completed, total_ratings, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, mandate_signed)
+                            INSERT INTO plumber_profiles (id, created_at, user_id, status, service_area_radius_km, total_missions_completed, total_ratings, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, mandate_signed)
                             VALUES (:id, :created_at, :user_id, 'ACTIVE', 30.0, 0, 0, false, false, false, false)
                         """),
                         {"id": profile_id, "created_at": now, "user_id": user_id}
@@ -326,17 +326,43 @@ async def _seed_mock_data() -> None:
                 },
             ]
 
+            # ==================== SHATTAF PROJECT ====================
+            # Well-known UUID for the Shattaf project — referenced by products and bookings
+            shattaf_project_id = "00000000-0000-4000-a000-000000000001"
+            await conn.execute(
+                text("""
+                    INSERT INTO projects (id, created_at, name, slug, type, status, description, department, landing_page_url)
+                    VALUES (:id, :created_at, :name, :slug, :type, :status, :description, :department, :landing_page_url)
+                """),
+                {
+                    "id": shattaf_project_id,
+                    "created_at": now,
+                    "name": "Shattaf Douchettes",
+                    "slug": "shattaf",
+                    "type": "INTERNAL",
+                    "status": "ACTIVE",
+                    "description": "Vente et installation de douchettes hygiéniques WC dans les DOM-TOM",
+                    "department": None,
+                    "landing_page_url": "https://shattaf.fr",
+                }
+            )
+            print("✓ Seeded Shattaf project")
+
+            # Link products to Shattaf project
+            for p in products:
+                p["project_id"] = shattaf_project_id
+
             for p in products:
                 await conn.execute(
                     text("""
-                        INSERT INTO products (id, created_at, sku, name, description, category, supplier_price, price_b2c, price_b2b, vat_rate, stock_quantity, is_available, image_url, gallery_urls, specifications, weight_grams, requires_installation, installation_time_minutes, installation_price)
-                        VALUES (:id, :created_at, :sku, :name, :description, :category, :supplier_price, :price_b2c, :price_b2b, :vat_rate, :stock_quantity, :is_available, :image_url, :gallery_urls, :specifications, :weight_grams, :requires_installation, :installation_time_minutes, :installation_price)
+                        INSERT INTO products (id, created_at, sku, name, description, category, supplier_price, price_b2c, price_b2b, vat_rate, stock_quantity, is_available, image_url, gallery_urls, specifications, weight_grams, requires_installation, installation_time_minutes, installation_price, project_id)
+                        VALUES (:id, :created_at, :sku, :name, :description, :category, :supplier_price, :price_b2c, :price_b2b, :vat_rate, :stock_quantity, :is_available, :image_url, :gallery_urls, :specifications, :weight_grams, :requires_installation, :installation_time_minutes, :installation_price, :project_id)
                     """),
                     p
                 )
 
             product_ids = [p["id"] for p in products[:3]]  # Only shattaf products
-            print(f"✓ Seeded {len(products)} products")
+            print(f"✓ Seeded {len(products)} products (linked to Shattaf project)")
 
             # ==================== PRICING CONFIG ====================
             pricing_id = str(uuid4())
@@ -424,7 +450,7 @@ async def _seed_mock_data() -> None:
                 intervention_locs = json.dumps([{"lat": loc["lat"], "lng": loc["lng"], "address": f"{loc['city']}, {loc['postal']}", "label": "Base"}])
                 await conn.execute(
                     text("""
-                        INSERT INTO plumber_profiles (id, created_at, user_id, status, department, intervention_locations, company_name, siren, service_area_lat, service_area_lng, service_area_radius_km, total_jobs_completed, average_rating, total_ratings, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, mandate_signed)
+                        INSERT INTO plumber_profiles (id, created_at, user_id, status, department, intervention_locations, company_name, siren, service_area_lat, service_area_lng, service_area_radius_km, total_missions_completed, average_rating, total_ratings, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, mandate_signed)
                         VALUES (:id, :created_at, :user_id, 'ACTIVE', :department, :intervention_locations, :company_name, :siren, :lat, :lng, :radius, :jobs, :rating, :ratings, true, true, true, true)
                     """),
                     {
@@ -516,14 +542,16 @@ async def _seed_mock_data() -> None:
 
                 await conn.execute(
                     text("""
-                        INSERT INTO bookings (id, created_at, customer_id, status, address_street, address_city, address_postal_code, address_country, address_lat, address_lng, toilet_type, shutoff_valve_accessible, parking_available, product_id, preferred_date, assigned_plumber_id, additional_photo_urls)
-                        VALUES (:id, :created_at, :customer_id, :status, :street, :city, :postal, 'Guadeloupe', :lat, :lng, 'STANDARD', true, true, :product_id, :pref_date, :plumber_id, '[]')
+                        INSERT INTO bookings (id, created_at, customer_id, status, type, project_id, address_street, address_city, address_postal_code, address_country, address_lat, address_lng, toilet_type, shutoff_valve_accessible, parking_available, product_id, preferred_date, assigned_plumber_id, additional_photo_urls)
+                        VALUES (:id, :created_at, :customer_id, :status, :type, :project_id, :street, :city, :postal, 'Guadeloupe', :lat, :lng, 'STANDARD', true, true, :product_id, :pref_date, :plumber_id, '[]')
                     """),
                     {
                         "id": booking_id,
                         "created_at": (now - timedelta(days=10-i)),
                         "customer_id": cust_id,
                         "status": status,
+                        "type": "PRODUCT",
+                        "project_id": shattaf_project_id,
                         "street": f"{random.randint(1, 150)} Avenue des Palmiers",
                         "city": loc["city"],
                         "postal": loc["postal"],
@@ -596,29 +624,29 @@ async def _seed_mock_data() -> None:
                             }
                         )
 
-                        # Create jobs for orders
-                        job_id = str(uuid4())
-                        job_statuses = ["SCHEDULED", "IN_PROGRESS", "COMPLETED"]
-                        job_status = job_statuses[i % 3]
+                        # Create missions for orders
+                        mission_id = str(uuid4())
+                        mission_statuses = ["SCHEDULED", "IN_PROGRESS", "COMPLETED"]
+                        mission_status = mission_statuses[i % 3]
 
                         await conn.execute(
                             text("""
-                                INSERT INTO jobs (id, created_at, order_id, plumber_id, status, scheduled_date, photo_before_urls, photo_after_urls, signature_name, inventory_qr_scanned)
+                                INSERT INTO missions (id, created_at, order_id, plumber_id, status, scheduled_date, photo_before_urls, photo_after_urls, signature_name, inventory_qr_scanned)
                                 VALUES (:id, :created_at, :order_id, :plumber_id, :status, :sched_date, '[]', '[]', :sig_name, false)
                             """),
                             {
-                                "id": job_id,
+                                "id": mission_id,
                                 "created_at": (now - timedelta(days=3-i)),
                                 "order_id": order_id,
                                 "plumber_id": plumb_id,
-                                "status": job_status,
+                                "status": mission_status,
                                 "sched_date": (now + timedelta(days=i-2)),
-                                "sig_name": "" if job_status != "COMPLETED" else customer_data[i % len(customer_data)][0] + " " + customer_data[i % len(customer_data)][1],
+                                "sig_name": "" if mission_status != "COMPLETED" else customer_data[i % len(customer_data)][0] + " " + customer_data[i % len(customer_data)][1],
                             }
                         )
 
                         # Create invoice for completed orders
-                        if job_status == "COMPLETED":
+                        if mission_status == "COMPLETED":
                             inv_id = str(uuid4())
                             inv_num = f"INV-{2024}{str(i+1).zfill(4)}"
                             plumb_info = plumber_data[i % len(plumber_data)]
@@ -653,7 +681,7 @@ async def _seed_mock_data() -> None:
                                 }
                             )
 
-            print(f"✓ Seeded {len(booking_ids)} bookings, {len(quote_ids)} quotes, {len(order_ids)} orders with jobs")
+            print(f"✓ Seeded {len(booking_ids)} bookings, {len(quote_ids)} quotes, {len(order_ids)} orders with missions")
 
         print("✓ Mock data seeding complete!")
 

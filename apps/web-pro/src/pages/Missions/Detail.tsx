@@ -8,14 +8,14 @@ const MissionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data: job, isLoading } = useQuery({
-    queryKey: ['job', id],
-    queryFn: () => apiClient.jobs.get(id!),
+  const { data: mission, isLoading } = useQuery({
+    queryKey: ['mission', id],
+    queryFn: () => apiClient.missions.get(id!),
     enabled: !!id,
   });
 
   const canStart =
-    job?.status === 'scheduled' || job?.status === 'en_route' || job?.status === 'checked_in';
+    mission?.status === 'scheduled' || mission?.status === 'en_route' || mission?.status === 'checked_in';
 
   if (isLoading) {
     return (
@@ -29,7 +29,7 @@ const MissionDetailPage: React.FC = () => {
     );
   }
 
-  if (!job) {
+  if (!mission) {
     return (
       <div className="container mx-auto px-4 py-6 text-center">
         <h1 className="text-xl font-bold mb-4">Mission non trouvée</h1>
@@ -53,7 +53,7 @@ const MissionDetailPage: React.FC = () => {
         <div>
           <h1 className="font-display text-xl font-bold">Détails mission</h1>
           <span className="text-xs font-bold uppercase text-cyan-400">
-            {job.status}
+            {mission.status}
           </span>
         </div>
       </div>
@@ -90,7 +90,7 @@ const MissionDetailPage: React.FC = () => {
       </div>
 
       {/* Photos from booking */}
-      {job.status !== 'completed' && (
+      {mission.status !== 'completed' && (
         <div className="glass rounded-2xl p-4 mb-6 transition-colors duration-200">
           <h2 className="font-bold mb-3">Photos du client</h2>
           <div className="grid grid-cols-2 gap-2">
@@ -121,7 +121,7 @@ const MissionDetailPage: React.FC = () => {
         </button>
       )}
 
-      {job.status === 'in_progress' && (
+      {mission.status === 'in_progress' && (
         <button
           onClick={() => navigate(`/missions/${id}/execution`)}
           className="w-full btn-primary py-4 rounded-xl font-bold uppercase tracking-wider flex items-center justify-center gap-2"

@@ -19,8 +19,11 @@ import BookingDetailPage from './pages/Account/BookingDetail';
 import MyOrdersPage from './pages/Account/Orders';
 import OrderDetailPage from './pages/Account/OrderDetail';
 import CheckoutPage from './pages/Checkout';
+import CheckoutSuccessPage from './pages/Checkout/Success';
 import AccountPage from './pages/Account';
 import TrackingPage from './pages/Track';
+import MarketplacePage from './pages/Marketplace';
+import QuotesListPage from './pages/Marketplace/QuotesList';
 
 // Protected route wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -46,6 +49,7 @@ const App: React.FC = () => {
       <Route element={<MainLayout />}>
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/marketplace" element={<MarketplacePage />} />
       </Route>
 
       {/* Auth routes */}
@@ -65,11 +69,13 @@ const App: React.FC = () => {
         <Route path="/booking" element={<BookingStepsPage />} />
         <Route path="/booking/confirm" element={<BookingConfirmPage />} />
         <Route path="/checkout/:orderId" element={<CheckoutPage />} />
+        <Route path="/checkout/:orderId/success" element={<CheckoutSuccessPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/bookings" element={<MyBookingsPage />} />
         <Route path="/account/bookings/:id" element={<BookingDetailPage />} />
         <Route path="/account/orders" element={<MyOrdersPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/marketplace/quotes/:bookingId" element={<QuotesListPage />} />
       </Route>
 
       {/* Fallback */}

@@ -6,13 +6,15 @@ import type {
   User,
   CustomerProfile,
   PlumberProfile,
+  Project,
+  ProjectStats,
   Product,
   Booking,
   Quote,
   Order,
   OrderItem,
-  Job,
-  JobPhoto,
+  Mission,
+  MissionPhoto,
   Invoice,
   InvoiceItem,
   LoginRequest,
@@ -203,6 +205,26 @@ export class ApiClient {
 
     reject: (id: string): Promise<Quote> =>
       this.request('POST', `/quotes/${id}/reject`),
+
+    generateAI: (bookingId: string, plumberNotes?: string): Promise<{
+      line_items: Array<{
+        description: string;
+        quantity: number;
+        unit_price_cents: number;
+        item_type: string;
+      }>;
+      subtotal_cents: number;
+      vat_amount_cents: number;
+      total_cents: number;
+      vat_rate: number;
+      estimated_duration_minutes: number;
+      confidence: number;
+      reasoning: string;
+    }> =>
+      this.request('POST', '/quotes/ai-draft', {
+        booking_id: bookingId,
+        plumber_notes: plumberNotes,
+      }),
   };
 
   // Order endpoints
@@ -225,24 +247,24 @@ export class ApiClient {
       this.request('POST', `/orders/${id}/rate?rating=${rating}${review ? `&review=${encodeURIComponent(review)}` : ''}`),
   };
 
-  // Job endpoints
-  jobs = {
-    list: (status?: string): Promise<Job[]> => {
+  // Mission endpoints
+  missions = {
+    list: (status?: string): Promise<Mission[]> => {
       const query = status ? `?status_filter=${status}` : '';
-      return this.request('GET', `/jobs${query}`);
+      return this.request('GET', `/missions${query}`);
     },
 
-    listToday: (): Promise<Job[]> =>
-      this.request('GET', '/jobs/today'),
+    listToday: (): Promise<Mission[]> =>
+      this.request('GET', '/missions/today'),
 
-    get: (id: string): Promise<Job> =>
-      this.request('GET', `/jobs/${id}`),
+    get: (id: string): Promise<Mission> =>
+      this.request('GET', `/missions/${id}`),
 
-    checkin: (id: string, lat: number, lng: number): Promise<Job> =>
-      this.request('POST', `/jobs/${id}/checkin`, { lat, lng }),
+    checkin: (id: string, lat: number, lng: number): Promise<Mission> =>
+      this.request('POST', `/missions/${id}/checkin`, { lat, lng }),
 
-    start: (id: string): Promise<Job> =>
-      this.request('POST', `/jobs/${id}/start`),
+    start: (id: string): Promise<Mission> =>
+      this.request('POST', `/missions/${id}/start`),
 
     addPhoto: (
       id: string,
@@ -251,25 +273,25 @@ export class ApiClient {
       caption?: string,
       lat?: number,
       lng?: number
-    ): Promise<JobPhoto> =>
-      this.request('POST', `/jobs/${id}/photos?photo_url=${encodeURIComponent(photoUrl)}`, {
+    ): Promise<MissionPhoto> =>
+      this.request('POST', `/missions/${id}/photos?photo_url=${encodeURIComponent(photoUrl)}`, {
         photo_type: photoType,
         caption,
         lat,
         lng,
       }),
 
-    getPhotos: (id: string): Promise<JobPhoto[]> =>
-      this.request('GET', `/jobs/${id}/photos`),
+    getPhotos: (id: string): Promise<MissionPhoto[]> =>
+      this.request('GET', `/missions/${id}/photos`),
 
-    addSignature: (id: string, signatureBase64: string, name: string): Promise<Job> =>
-      this.request('POST', `/jobs/${id}/signature`, {
+    addSignature: (id: string, signatureBase64: string, name: string): Promise<Mission> =>
+      this.request('POST', `/missions/${id}/signature`, {
         signature_image_base64: signatureBase64,
         signature_name: name,
       }),
 
-    complete: (id: string, notes?: string, issues?: string): Promise<Job> =>
-      this.request('POST', `/jobs/${id}/complete`, {
+    complete: (id: string, notes?: string, issues?: string): Promise<Mission> =>
+      this.request('POST', `/missions/${id}/complete`, {
         plumber_notes: notes,
         issues_reported: issues,
       }),
@@ -290,10 +312,83 @@ export class ApiClient {
       this.request('GET', `/invoices/${id}/pdf`),
   };
 
+  // Stripe Connect endpoints (plumber)
+  stripeConnect = {
+    createOnboardingLink: (): Promise<{ url: string }> =>
+      this.request('POST', '/users/plumber/stripe-onboarding'),
+
+    getStatus: (): Promise<{
+      hasAccount: boolean;
+      onboardingComplete: boolean;
+      chargesEnabled: boolean;
+      payoutsEnabled: boolean;
+    }> => this.request('GET', '/users/plumber/stripe-status'),
+  };
+
+  // Verification endpoints
+  verifications = {
+    listPending: (): Promise<any[]> =>
+      this.request('GET', '/verifications/pending'),
+
+    listMine: (status?: string): Promise<any[]> => {
+      const query = status ? `?status_filter=${status}` : '';
+      return this.request('GET', `/verifications/plumber${query}`);
+    },
+
+    getByMission: (missionId: string): Promise<any> =>
+      this.request('GET', `/verifications/mission/${missionId}`),
+
+    get: (id: string): Promise<any> =>
+      this.request('GET', `/verifications/${id}`),
+
+    accept: (id: string, scheduledDate?: string): Promise<any> =>
+      this.request('POST', `/verifications/${id}/accept`, {
+        scheduled_date: scheduledDate,
+      }),
+
+    start: (id: string): Promise<any> =>
+      this.request('POST', `/verifications/${id}/start`),
+
+    complete: (id: string, data: {
+      approved: boolean;
+      checklist?: Array<{ item: string; passed: boolean; notes?: string }>;
+      issues?: string;
+      verifierNotes?: string;
+      photoUrls?: string[];
+    }): Promise<any> =>
+      this.request('POST', `/verifications/${id}/complete`, {
+        approved: data.approved,
+        checklist: data.checklist || [],
+        issues: data.issues,
+        verifier_notes: data.verifierNotes,
+        photo_urls: data.photoUrls || [],
+      }),
+  };
+
   // Payment endpoints
   payments = {
     createIntent: (orderId: string): Promise<{ client_secret: string; payment_intent_id: string }> =>
       this.request('POST', `/payments/orders/${orderId}/create-intent`),
+  };
+
+  // Project endpoints (admin)
+  projects = {
+    list: (status?: string): Promise<Project[]> => {
+      const query = status ? `?status_filter=${status}` : '';
+      return this.request('GET', `/admin/projects${query}`);
+    },
+
+    get: (id: string): Promise<Project> =>
+      this.request('GET', `/admin/projects/${id}`),
+
+    create: (data: Partial<Project>): Promise<Project> =>
+      this.request('POST', '/admin/projects', data),
+
+    update: (id: string, data: Partial<Project>): Promise<Project> =>
+      this.request('PATCH', `/admin/projects/${id}`, data),
+
+    getStats: (id: string): Promise<ProjectStats> =>
+      this.request('GET', `/admin/projects/${id}/stats`),
   };
 }
 

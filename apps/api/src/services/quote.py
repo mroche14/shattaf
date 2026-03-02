@@ -8,10 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from ..config import get_settings
-from ..models import Quote, QuoteStatus, Booking, BookingStatus, Product
+from ..models import Quote, QuoteStatus, Booking, BookingType, BookingStatus, Product
 from ..utils.db import uuid_column_eq
 
 settings = get_settings()
+
+# Default VAT rate for DOM-TOM (8.5%)
+DEFAULT_VAT_RATE = 0.085
 
 
 class QuoteService:
@@ -29,32 +32,47 @@ class QuoteService:
         proposed_time_slot: str,
         estimated_duration_minutes: int = 45,
         plumber_notes: Optional[str] = None,
+        product_price: Optional[int] = None,
     ) -> Optional[Quote]:
-        """Create a quote for a booking."""
+        """Create a quote for a booking.
+
+        For product bookings: product_price is auto-calculated from the product.
+        For marketplace bookings: product_price is 0 (labor-only), or can be
+        provided by the plumber to cover materials.
+        """
         # Get booking
         result = await self.session.execute(
             select(Booking).where(uuid_column_eq(Booking.id, booking_id))
         )
         booking = result.scalar_one_or_none()
-        if not booking or not booking.product_id:
+        if not booking:
             return None
 
-        # Get product price
-        result = await self.session.execute(
-            select(Product).where(uuid_column_eq(Product.id, booking.product_id))
-        )
-        product = result.scalar_one_or_none()
-        if not product:
-            return None
+        vat_rate = DEFAULT_VAT_RATE
 
-        product_price = product.price_b2c
+        if booking.type == BookingType.MARKETPLACE:
+            # Marketplace: plumber defines full pricing, no product lookup
+            final_product_price = product_price or 0
+        else:
+            # Product booking: lookup product for price
+            if not booking.product_id:
+                return None
+
+            result = await self.session.execute(
+                select(Product).where(uuid_column_eq(Product.id, booking.product_id))
+            )
+            product = result.scalar_one_or_none()
+            if not product:
+                return None
+
+            final_product_price = product.price_b2c
+            vat_rate = float(product.vat_rate) / 100
 
         # Calculate platform fee (on installation only)
         platform_fee = int(installation_price * settings.STRIPE_PLATFORM_FEE_PERCENT / 100)
 
         # Calculate totals
-        subtotal = product_price + installation_price
-        vat_rate = float(product.vat_rate) / 100
+        subtotal = final_product_price + installation_price
         vat_amount = int(subtotal * vat_rate)
         total_price = subtotal + vat_amount
 
@@ -62,7 +80,7 @@ class QuoteService:
             booking_id=booking_id,
             plumber_id=plumber_id,
             installation_price=installation_price,
-            product_price=product_price,
+            product_price=final_product_price,
             platform_fee=platform_fee,
             total_price=total_price,
             vat_amount=vat_amount,

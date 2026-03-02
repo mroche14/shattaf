@@ -5,14 +5,14 @@ import { apiClient } from '../../api/client';
 import { formatPrice } from '@shattaf/shared-types';
 
 const EarningsPage: React.FC = () => {
-  const { data: jobs } = useQuery({
-    queryKey: ['jobs', 'completed'],
-    queryFn: () => apiClient.jobs.list('completed'),
+  const { data: missions } = useQuery({
+    queryKey: ['missions', 'completed'],
+    queryFn: () => apiClient.missions.list('completed'),
   });
 
   // Calculate earnings (simplified - would come from orders in production)
-  const completedCount = jobs?.length || 0;
-  const estimatedEarnings = completedCount * 5000; // Placeholder 50€ per job
+  const completedCount = missions?.length || 0;
+  const estimatedEarnings = completedCount * 5000; // Placeholder 50€ per mission
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -63,16 +63,16 @@ const EarningsPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {jobs?.slice(0, 5).map((job) => (
+            {missions?.slice(0, 5).map((mission) => (
               <div
-                key={job.id}
+                key={mission.id}
                 className="glass rounded-xl p-4 flex items-center justify-between transition-colors duration-200"
               >
                 <div>
                   <p className="font-medium">Installation shattaf</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {job.completedAt &&
-                      new Date(job.completedAt).toLocaleDateString('fr-FR')}
+                    {mission.completedAt &&
+                      new Date(mission.completedAt).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
                 <span className="font-bold text-emerald-400">

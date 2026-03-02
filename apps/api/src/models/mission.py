@@ -1,4 +1,4 @@
-"""Job (mission) model."""
+"""Mission model."""
 
 from datetime import datetime
 from enum import Enum
@@ -9,26 +9,27 @@ from sqlmodel import Field, Column, JSON
 from .base import BaseModel
 
 
-class JobStatus(str, Enum):
-    """Job status."""
+class MissionStatus(str, Enum):
+    """Mission status."""
 
     SCHEDULED = "scheduled"
     EN_ROUTE = "en_route"  # Plumber on the way
     CHECKED_IN = "checked_in"  # Plumber arrived
     IN_PROGRESS = "in_progress"  # Work started
     PENDING_SIGNATURE = "pending_signature"  # Work done, waiting signature
+    PENDING_VERIFICATION = "pending_verification"  # Awaiting peer verification
     COMPLETED = "completed"  # Signed and done
     CANCELLED = "cancelled"
 
 
-class Job(BaseModel, table=True):
-    """Field job/mission for plumber."""
+class Mission(BaseModel, table=True):
+    """Field mission for plumber."""
 
-    __tablename__ = "jobs"
+    __tablename__ = "missions"
 
     order_id: UUID = Field(foreign_key="orders.id", unique=True, index=True)
     plumber_id: UUID = Field(foreign_key="users.id", index=True)
-    status: JobStatus = Field(default=JobStatus.SCHEDULED)
+    status: MissionStatus = Field(default=MissionStatus.SCHEDULED)
 
     # Scheduling
     scheduled_date: datetime = Field(default_factory=datetime.utcnow)
@@ -37,7 +38,7 @@ class Job(BaseModel, table=True):
     checkin_time: Optional[datetime] = None
     checkin_lat: Optional[float] = None
     checkin_lng: Optional[float] = None
-    checkin_distance_meters: Optional[int] = None  # Distance from job location
+    checkin_distance_meters: Optional[int] = None  # Distance from mission location
 
     # Work tracking
     start_time: Optional[datetime] = None
@@ -65,12 +66,12 @@ class Job(BaseModel, table=True):
     inventory_unit_id: Optional[UUID] = None
 
 
-class JobPhoto(BaseModel, table=True):
-    """Photo taken during job execution."""
+class MissionPhoto(BaseModel, table=True):
+    """Photo taken during mission execution."""
 
-    __tablename__ = "job_photos"
+    __tablename__ = "mission_photos"
 
-    job_id: UUID = Field(foreign_key="jobs.id", index=True)
+    mission_id: UUID = Field(foreign_key="missions.id", index=True)
 
     photo_url: str
     photo_type: str  # "before", "during", "after", "issue"

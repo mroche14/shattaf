@@ -13,6 +13,7 @@ import {
   Receipt,
   Briefcase,
   History,
+  FolderOpen,
   LogOut,
   Menu,
   X,
@@ -37,8 +38,9 @@ const navigation: NavItem[] = [
   { name: 'Clients', href: '/customers', icon: Users },
   { name: 'Réservations', href: '/bookings', icon: ClipboardList, badgeKey: 'pendingBookings' },
   { name: 'Commandes', href: '/orders', icon: Package },
-  { name: 'Missions', href: '/jobs', icon: Briefcase },
+  { name: 'Missions', href: '/missions', icon: Briefcase },
   { name: 'Factures', href: '/invoices', icon: Receipt },
+  { name: 'Projets', href: '/projects', icon: FolderOpen },
   { name: 'Produits', href: '/products', icon: FileText },
   { name: 'Audit', href: '/audit', icon: History },
 ];
@@ -107,10 +109,10 @@ const AdminLayout: React.FC = () => {
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">S</span>
+                <span className="text-white font-bold text-lg">R</span>
               </div>
               <div>
-                <h1 className="font-display font-bold text-lg" style={{ color: 'var(--text-main)' }}>Shattaf</h1>
+                <h1 className="font-display font-bold text-lg" style={{ color: 'var(--text-main)' }}>Réseau Plomb</h1>
                 <span className="text-xs text-indigo-500 font-medium">Admin</span>
               </div>
             </div>

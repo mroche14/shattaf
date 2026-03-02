@@ -14,12 +14,13 @@ def uuid_hex(uuid_val: UUID) -> str:
 
 
 def uuid_column_eq(column, uuid_val: UUID):
-    """Create a SQLite-compatible UUID column comparison.
+    """Compare a UUID column with a UUID value.
 
-    SQLite stores UUIDs as hex strings without dashes, so we need to
-    cast the column to string and compare with the hex representation.
+    Works with both PostgreSQL (native uuid type) and SQLite (hex strings).
 
     Usage:
         select(User).where(uuid_column_eq(User.id, some_uuid))
     """
-    return cast(column, String) == uuid_val.hex
+    # Direct comparison works for PostgreSQL native UUID columns.
+    # For SQLite, cast to string and compare with str(uuid) which includes dashes.
+    return column == str(uuid_val)

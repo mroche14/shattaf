@@ -18,6 +18,7 @@ from ..schemas.prospect import (
     ProspectListResponse,
     ProspectMapItem,
     ImportResult,
+    GeocodeResult,
 )
 from ..services.prospect import ProspectService
 from ..services.geocoding import GeocodingService
@@ -109,6 +110,32 @@ async def _run_geocoding_background():
             geocoding_service = GeocodingService(session)
             stats = await geocoding_service.geocode_prospects(prospects)
             logger.info(f"Auto-geocoding done: {stats}")
+
+
+@router.post("/geocode", response_model=GeocodeResult)
+async def geocode_prospects(
+    session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_admin_user),
+):
+    """Trigger batch geocoding of all un-geocoded prospects."""
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(PlumberProspect).where(PlumberProspect.geocoded_at.is_(None))
+    )
+    prospects = list(result.scalars().all())
+
+    if not prospects:
+        return GeocodeResult(geocoded=0, failed=0, skipped=0)
+
+    geocoding_service = GeocodingService(session)
+    stats = await geocoding_service.geocode_prospects(prospects)
+
+    return GeocodeResult(
+        geocoded=stats.get("geocoded", 0),
+        failed=stats.get("failed", 0),
+        skipped=stats.get("skipped", 0),
+    )
 
 
 @router.get("/map", response_model=list[ProspectMapItem])

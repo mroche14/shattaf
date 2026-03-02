@@ -76,7 +76,7 @@ const RegisterPage: React.FC = () => {
       <div className="text-center">
         <h1 className="font-display text-2xl font-bold mb-2">Devenir partenaire</h1>
         <p style={{ color: 'var(--text-secondary)' }} className="text-sm">
-          Créez votre compte plombier
+          Rejoignez le réseau de plombiers
         </p>
       </div>
 

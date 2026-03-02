@@ -31,7 +31,7 @@ const LandingPage: React.FC = () => {
                 <Droplets className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-bold text-primary">
-                SHATTAF <span className="cyan-gradient-text">PRO</span>
+                RESEAU <span className="cyan-gradient-text">PLOMB</span>
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ const LandingPage: React.FC = () => {
             </h1>
             <p className="text-xl text-secondary mb-10 max-w-2xl mx-auto leading-relaxed">
               Recevez des missions qualifiées, gérez votre planning et augmentez vos revenus
-              avec Shattaf Pro. <span className="font-semibold text-primary">Zéro prospection, 100% installation.</span>
+              avec Réseau Plomb. <span className="font-semibold text-primary">Zéro prospection, 100% installation.</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -127,7 +127,7 @@ const LandingPage: React.FC = () => {
               Avantages
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-primary">
-              Pourquoi rejoindre Shattaf Pro ?
+              Pourquoi rejoindre Réseau Plomb ?
             </h2>
             <p className="text-secondary max-w-2xl mx-auto text-lg">
               Une plateforme conçue pour les plombiers professionnels qui veulent
@@ -288,7 +288,7 @@ const LandingPage: React.FC = () => {
                     Rejoignez 150+ plombiers
                   </h3>
                   <p className="text-secondary mb-8 text-lg">
-                    qui font déjà confiance à Shattaf Pro
+                    qui font déjà confiance à Réseau Plomb
                   </p>
                   <Link
                     to="/register"
@@ -325,7 +325,7 @@ const LandingPage: React.FC = () => {
                 name: 'Jean-Pierre M.',
                 location: 'Pointe-à-Pitre (971)',
                 quote:
-                  'Depuis que je suis partenaire Shattaf, j\'ai des missions régulières sans avoir à prospecter. Le paiement est toujours rapide.',
+                  'Depuis que je suis partenaire Réseau Plomb, j\'ai des missions régulières sans avoir à prospecter. Le paiement est toujours rapide.',
                 rating: 5,
               },
               {
@@ -395,7 +395,7 @@ const LandingPage: React.FC = () => {
                 to="/register"
                 className="group inline-flex items-center justify-center gap-2 px-10 py-5 btn-primary rounded-2xl font-semibold text-xl hover:-translate-y-1 transition-all duration-300"
               >
-                Devenir partenaire Shattaf
+                Devenir partenaire Réseau Plomb
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -410,10 +410,10 @@ const LandingPage: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
               <Droplets className="w-6 h-6 text-white" />
             </div>
-            <span className="font-bold text-primary text-lg">SHATTAF PRO</span>
+            <span className="font-bold text-primary text-lg">RESEAU PLOMB</span>
           </div>
           <div className="text-sm text-tertiary">
-            © 2024 Oasis Shattaf. Tous droits réservés.
+            © 2024 Réseau Plomb. Tous droits réservés.
           </div>
           <div className="flex gap-8 text-sm">
             <a href="#" className="text-secondary hover:text-primary transition-colors">

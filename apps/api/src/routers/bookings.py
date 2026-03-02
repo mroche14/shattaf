@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_session
-from ..models import User, UserRole, BookingStatus
+from ..models import User, UserRole, BookingType, BookingStatus
 from ..schemas import BookingCreate, BookingUpdate, BookingResponse, PhotoUploadResponse
 from ..services.booking import BookingService
 from ..integrations.storage import StorageService
@@ -22,12 +22,30 @@ async def create_booking(
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Create a new booking."""
+    """Create a new booking.
+
+    Product bookings require product_id.
+    Marketplace bookings require category + description.
+    """
     if current_user.role != UserRole.CUSTOMER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only customers can create bookings",
         )
+
+    # Validate based on booking type
+    if data.type == BookingType.MARKETPLACE:
+        if not data.category or not data.description:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Marketplace bookings require category and description",
+            )
+    else:
+        if not data.product_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Product bookings require a product_id",
+            )
 
     service = BookingService(session)
     return await service.create_booking(

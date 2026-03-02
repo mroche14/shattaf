@@ -1,138 +1,167 @@
-# Shattaf Marketplace Platform
+# Réseau Plomb — Plateforme réseau plombiers
 
-## Project Overview
+## Vision
 
-Shattaf is a marketplace platform for bidet (shattaf) installation services in French overseas departments (Guadeloupe, Martinique, Guyane). The platform connects customers with certified plumbers for product purchase and professional installation.
+**Réseau Plomb** est une plateforme de mise en réseau de plombiers indépendants dans les DOM (Guadeloupe, Martinique, Guyane). Elle connecte plombiers, clients particuliers et clients professionnels autour de missions de plomberie.
+
+La plateforme opère sur **deux modes** :
+
+### Mode 1 — Projets internes (la plateforme est cliente d'elle-même)
+- Des campagnes de vente standardisées (ex : **Shattaf** = douchettes hygiéniques)
+- La plateforme contrôle le produit, le prix, le marketing, la communication
+- Les plombiers du réseau exécutent les missions
+- Inclut du suivi marketing, de la communication projet, de la logistique
+
+### Mode 2 — Marketplace ouverte (clients → plombiers)
+- Un particulier ou un professionnel poste une demande de mission
+- L'IA aide à qualifier le besoin, structurer le devis, estimer le budget
+- Le matching connecte avec les plombiers qualifiés à proximité
+- Vérification qualité par un plombier tiers (peer review = mission payée)
+
+### Proposition de valeur pour les plombiers
+- Professionnalisation massive : devis IA, process structuré, documentation chantier
+- Visibilité sans effort marketing personnel
+- Missions clé-en-main (projets internes) + flux client direct (marketplace)
+- Coût inférieur aux entreprises établies → avantage prix pour les clients
+
+## Projet Shattaf (premier projet interne)
+
+Shattaf est le **premier projet interne** de Réseau Plomb :
+- Vente de kits douchettes hygiéniques + installation professionnelle
+- Marchés : Guadeloupe (971), Martinique (972), Guyane (973)
+- Specs complètes : `shattaf_marketplace_specs_v1_1/`
+- Le code actuel implémente principalement ce projet
 
 ## Architecture
 
-**Monorepo** using pnpm workspaces + Turborepo
+**Monorepo** pnpm workspaces + Turborepo
 
 ```
-shattaf/
+shattaf/                          # repo actuel (sera renommé reseau-plomb/)
 ├── apps/
-│   ├── api/           # FastAPI Python backend (port 8010)
-│   ├── web-client/    # Customer portal - React (port 3003)
-│   ├── web-pro/       # Plumber PWA - React (port 3001)
-│   └── web-admin/     # Admin backoffice - React (port 3002)
+│   ├── api/                      # FastAPI Python backend (port 8010)
+│   ├── web-client/               # Portail client - React (port 3003)
+│   ├── web-pro/                  # PWA Plombier - React (port 3001)
+│   └── web-admin/                # Backoffice admin - React (port 3002)
 ├── packages/
-│   ├── shared-types/  # Shared TypeScript types
-│   ├── ui-kit/        # Shared UI components
-│   └── api-client/    # Generated API client
-├── web_src/           # Landing page (existing)
-└── docs/              # Business documentation
+│   ├── shared-types/             # Types TypeScript partagés
+│   ├── ui-kit/                   # Composants UI partagés
+│   └── api-client/               # Client API généré
+├── docs/                         # Documentation business & légale
+│   ├── VISION.md                 # Vision stratégique Réseau Plomb
+│   └── ...                       # Guides juridiques, études, sources
+├── shattaf_marketplace_specs_v1_1/  # Specs projet Shattaf (contrats, factures, CGV)
+└── web_src/                      # Landing page
 ```
 
 ## Tech Stack
 
 - **Backend**: FastAPI, SQLModel, PostgreSQL, Alembic
 - **Frontend**: React 19, TypeScript, Tailwind CSS v4, React Query, Zustand
-- **Integrations**: Stripe Connect, Google Maps, Brevo (SMS/Email), S3/R2
+- **Intégrations**: Stripe Connect, Google Maps/BAN, Brevo (SMS/Email), S3/R2
+- **IA** (à implémenter): Aide au devis, qualification de besoin
 
-## Key Concepts
+## Modèle de données
 
-### User Roles
-- `customer` - End users booking installations
-- `plumber` - Certified installers (by department: 971, 972, 973)
-- `admin` - Platform administrators
+### Entités réseau (platform-level)
+- `User` — Compte utilisateur (role: customer, plumber, admin)
+- `PlumberProfile` — Profil plombier (lifecycle complet: prospect → pending → active)
+- `CustomerProfile` — Profil client
 
-### Business Flow
-1. Customer creates booking (location, photos, toilet type)
-2. Matching algorithm finds nearby plumbers
-3. Plumber sends quote
-4. Customer accepts and pays (Stripe split payment)
-5. Plumber executes job (check-in, photos, signature)
-6. Invoice generated with mandataire mentions (BOFiP compliant)
+### Entités mission
+- `Booking` — Demande de mission client (localisation, photos, type)
+- `Quote` — Devis plombier
+- `Order` — Mission confirmée + paiement (Stripe split)
+- `Job` — Exécution terrain (check-in, photos, signature)
+- `Invoice` — Facture (mentions mandataire BOFiP)
 
-### Departments
-- `971` - Guadeloupe (primary)
-- `972` - Martinique
-- `973` - Guyane
+### Entités projet Shattaf
+- `Product` — Catalogue produits
+- `PricingConfig` — Configuration tarification
 
-## Development Commands
+### Admin
+- `AuditLog` — Journal d'audit
+- Prospects = PlumberProfile avec `status='prospect'` (pipeline CRM intégré)
+
+## Rôles utilisateur
+
+- `customer` — Client final (particulier ou pro)
+- `plumber` — Plombier indépendant du réseau
+- `admin` — Administrateur plateforme
+
+## Départements cibles
+
+- `971` — Guadeloupe (marché primaire)
+- `972` — Martinique
+- `973` — Guyane
+
+## Commandes de développement
 
 ```bash
-# Install dependencies
-pnpm install
+pnpm install                              # Installer les dépendances
+pnpm dev                                  # Démarrer tout en dev
+pnpm dev --filter=web-admin               # Démarrer une app spécifique
 
-# Start all apps in dev mode
-pnpm dev
-
-# Start specific app
-pnpm dev --filter=web-client
-pnpm dev --filter=web-pro
-pnpm dev --filter=web-admin
-
-# Backend (separate terminal)
+# Backend
 cd apps/api
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source venv/bin/activate
 pip install -r requirements.txt
 uvicorn src.main:app --reload --port 8010
 
-# Database migrations
+# Migrations
 cd apps/api
 alembic upgrade head
 alembic revision --autogenerate -m "description"
 
-# Build all
-pnpm build
-
-# Type check
-pnpm typecheck
+pnpm build                                # Build
+pnpm typecheck                            # Type check
 ```
 
-## Environment Setup
+## Setup environnement
 
-1. Copy `.env.example` to `.env` in project root
-2. Copy `.env.example` to `apps/api/.env`
-3. Fill in required values (database, Stripe keys, etc.)
+1. Copier `.env.example` → `.env` (racine)
+2. Copier `.env.example` → `apps/api/.env`
+3. Remplir les valeurs (database, Stripe, etc.)
 
-## API Endpoints
+## Endpoints API
 
-All endpoints prefixed with `/api/v1/`
+Préfixe : `/api/v1/`
 
-- `/auth/*` - Authentication (register, login, refresh)
-- `/users/*` - User profiles
-- `/products/*` - Product catalog
-- `/bookings/*` - Customer reservations
-- `/quotes/*` - Plumber quotes
-- `/orders/*` - Orders with payment
-- `/jobs/*` - Mission execution
-- `/invoices/*` - Invoice generation
-- `/payments/*` - Stripe webhooks
-- `/admin/*` - Admin operations
+- `/auth/*` — Authentification
+- `/users/*` — Profils
+- `/products/*` — Catalogue produits (projet Shattaf)
+- `/bookings/*` — Demandes de mission
+- `/quotes/*` — Devis plombier
+- `/orders/*` — Missions confirmées + paiement
+- `/jobs/*` — Exécution terrain
+- `/invoices/*` — Facturation
+- `/payments/*` — Webhooks Stripe
+- `/admin/*` — Opérations admin (stats, couverture, matching, prospects)
 
-## Database Models
+## Admin Backoffice (web-admin)
 
-Key models in `apps/api/src/models/`:
-- `User` - Base user with role
-- `CustomerProfile` - Customer details
-- `PlumberProfile` - Plumber with department, intervention zones
-- `Booking` - Reservation with location/photos
-- `Quote` - Plumber price proposal
-- `Order` - Confirmed order with payment
-- `Job` - Field mission execution
-- `Invoice` - Generated invoice
+Centre de commande du réseau :
+- **Dashboard** — KPIs activité (gauche) + prospects (droite)
+- **Carte de couverture** — Plombiers, réservations, prospects, zones mortes
+- **Zones mortes** — Source configurable (plombiers / prospects / combiné)
+- **Simulation matching** — Test depuis point arbitraire ou adresse
+- **Pipeline prospects** — CRM (2000+ prospects, filtres par type/téléphone/email)
+- **Gestion plombiers** — Statuts, départements, zones d'intervention
 
-## Admin Features
-
-The admin interface (`web-admin`) provides:
-- Dashboard with stats by department
-- Coverage map (Leaflet) showing plumber locations
-- Plumber management (status, department, intervention zones)
-- Matching simulation and visualization
-- Full tracking of all entities
-- Audit logs
-
-## Code Conventions
+## Conventions de code
 
 - Backend: Python 3.11+, type hints, async/await
-- Frontend: TypeScript strict, functional components
-- Styling: Tailwind CSS with custom design tokens
-- State: Zustand for local, React Query for server state
-- Forms: React Hook Form + Zod validation
+- Frontend: TypeScript strict, composants fonctionnels
+- Styling: Tailwind CSS avec design tokens custom
+- État: Zustand pour local, React Query pour serveur
+- Formulaires: React Hook Form + Zod
 
 ## Documentation
 
-Full architecture plan: `~/.claude/plans/shattaf-marketplace-architecture.md`
+| Document | Contenu |
+|----------|---------|
+| `docs/VISION.md` | Vision stratégique Réseau Plomb (deux modes, peer review, roadmap) |
+| `docs/reseau-installateurs-shattaf.md` | Guide juridique/opérationnel réseau installateurs |
+| `shattaf_marketplace_specs_v1_1/` | Specs complètes projet Shattaf (contrats, mandats, CGV, factures) |
+| `docs/sources-plombiers-dom.md` | Sources de données plombiers DOM |
+| `plan.md` | Plan d'architecture technique |

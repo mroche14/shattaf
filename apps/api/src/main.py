@@ -14,13 +14,15 @@ from .routers import (
     bookings_router,
     quotes_router,
     orders_router,
-    jobs_router,
+    missions_router,
     invoices_router,
     payments_router,
     public_router,
 )
 from .routers.admin import router as admin_router
 from .routers.admin_prospects import router as admin_prospects_router
+from .routers.projects import router as projects_router
+from .routers.verifications import router as verifications_router
 
 settings = get_settings()
 
@@ -38,7 +40,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Shattaf Marketplace API - Installation services platform for Guadeloupe",
+    description="Réseau Plomb API - Plumber network platform for DOM-TOM",
     lifespan=lifespan,
 )
 
@@ -59,12 +61,14 @@ app.include_router(products_router, prefix=API_PREFIX)
 app.include_router(bookings_router, prefix=API_PREFIX)
 app.include_router(quotes_router, prefix=API_PREFIX)
 app.include_router(orders_router, prefix=API_PREFIX)
-app.include_router(jobs_router, prefix=API_PREFIX)
+app.include_router(missions_router, prefix=API_PREFIX)
 app.include_router(invoices_router, prefix=API_PREFIX)
 app.include_router(payments_router, prefix=API_PREFIX)
 app.include_router(public_router, prefix=API_PREFIX)
 app.include_router(admin_router, prefix=API_PREFIX)
 app.include_router(admin_prospects_router, prefix=API_PREFIX)
+app.include_router(projects_router, prefix=API_PREFIX)
+app.include_router(verifications_router, prefix=API_PREFIX)
 
 
 @app.get("/")

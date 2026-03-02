@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Shattaf Pro',
-        short_name: 'Shattaf Pro',
-        description: 'Application plombier Shattaf',
+        name: 'Réseau Plomb',
+        short_name: 'Réseau Plomb',
+        description: 'Application plombier Réseau Plomb',
         theme_color: '#020617',
         background_color: '#020617',
         display: 'standalone',

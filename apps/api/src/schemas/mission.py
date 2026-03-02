@@ -1,22 +1,22 @@
-"""Job schemas."""
+"""Mission schemas."""
 
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
 
-from ..models.job import JobStatus
+from ..models.mission import MissionStatus
 
 
-class JobCheckin(BaseModel):
-    """Plumber check-in at job location."""
+class MissionCheckin(BaseModel):
+    """Plumber check-in at mission location."""
 
     lat: float
     lng: float
 
 
-class JobPhotoUpload(BaseModel):
-    """Job photo upload request."""
+class MissionPhotoUpload(BaseModel):
+    """Mission photo upload request."""
 
     photo_type: str  # "before", "during", "after", "issue"
     caption: Optional[str] = None
@@ -24,22 +24,22 @@ class JobPhotoUpload(BaseModel):
     lng: Optional[float] = None
 
 
-class JobSignature(BaseModel):
+class MissionSignature(BaseModel):
     """Customer signature capture."""
 
     signature_image_base64: str
     signature_name: str
 
 
-class JobComplete(BaseModel):
-    """Job completion by plumber."""
+class MissionComplete(BaseModel):
+    """Mission completion by plumber."""
 
     plumber_notes: Optional[str] = None
     issues_reported: Optional[str] = None
 
 
-class JobPhotoResponse(BaseModel):
-    """Job photo response."""
+class MissionPhotoResponse(BaseModel):
+    """Mission photo response."""
 
     id: UUID
     photo_url: str
@@ -53,13 +53,13 @@ class JobPhotoResponse(BaseModel):
         from_attributes = True
 
 
-class JobResponse(BaseModel):
-    """Job response."""
+class MissionResponse(BaseModel):
+    """Mission response."""
 
     id: UUID
     order_id: UUID
     plumber_id: UUID
-    status: JobStatus
+    status: MissionStatus
     checkin_time: Optional[datetime] = None
     checkin_lat: Optional[float] = None
     checkin_lng: Optional[float] = None

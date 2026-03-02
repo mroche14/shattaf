@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    APP_NAME: str = "Shattaf Marketplace API"
+    APP_NAME: str = "Réseau Plomb API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PLATFORM_FEE_PERCENT: float = 15.0
 
+    # Frontend URLs (for Stripe Connect return URLs)
+    FRONTEND_PRO_URL: str = "http://localhost:3001"
+
     # Google Maps
     GOOGLE_MAPS_API_KEY: str = ""
 
@@ -55,6 +58,15 @@ class Settings(BaseSettings):
     S3_SECRET_ACCESS_KEY: str = ""
     S3_BUCKET_NAME: str = "shattaf-uploads"
     S3_PUBLIC_URL: str = ""
+
+    # Anthropic (AI Devis)
+    ANTHROPIC_API_KEY: str = ""
+
+    # OpenRouteService (isochrone dead zone detection)
+    ORS_API_KEY: str = ""
+
+    # HERE API (isochrone - primary)
+    HERE_API_KEY: str = ""
 
     # Guadeloupe Zone (971)
     SERVICE_ZONE_POSTAL_PREFIX: str = "971"

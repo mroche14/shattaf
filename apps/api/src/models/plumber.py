@@ -75,7 +75,7 @@ class PlumberProfile(BaseModel, table=True):
     service_area_radius_km: float = Field(default=30.0)
 
     # Performance
-    total_jobs_completed: int = Field(default=0)
+    total_missions_completed: int = Field(default=0)
     average_rating: Optional[float] = None
     total_ratings: int = Field(default=0)
 

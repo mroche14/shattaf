@@ -9,11 +9,13 @@ import PlumberDetailPage from './pages/Plumbers/Detail';
 import CoveragePage from './pages/Coverage';
 import BookingsPage from './pages/Bookings';
 import OrdersPage from './pages/Orders';
-import JobsPage from './pages/Jobs';
+import MissionsPage from './pages/Missions';
 import InvoicesPage from './pages/Invoices';
 import CustomersPage from './pages/Customers';
 import ProductsPage from './pages/Products';
 import MatchingPage from './pages/Matching';
+import ProjectsPage from './pages/Projects';
+import ProjectDetailPage from './pages/Projects/Detail';
 import AuditPage from './pages/Audit';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,8 +54,10 @@ const App: React.FC = () => {
         <Route path="customers" element={<CustomersPage />} />
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="orders" element={<OrdersPage />} />
-        <Route path="jobs" element={<JobsPage />} />
+        <Route path="missions" element={<MissionsPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="audit" element={<AuditPage />} />
       </Route>
