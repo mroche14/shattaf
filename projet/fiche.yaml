@@ -1,0 +1,69 @@
+nom: shattaf
+objectif: >-
+  Shattaf / Réseau Plomb met en réseau des plombiers indépendants des DOM
+  (Guadeloupe, Martinique, Guyane) avec des clients particuliers et
+  professionnels autour de missions de plomberie, en commençant par une
+  campagne de vente interne de douchettes hygiéniques avant d'ouvrir une
+  marketplace complète (devis IA, matching géographique, paiement Stripe
+  Connect, vérification par les pairs) (source : CLAUDE.md, docs/VISION.md).
+archetype: hub-2-audiences
+statut: actif
+sante: orange
+prochaine-etape: >-
+  plan.md détaille 5 phases non commencées pour transformer Shattaf en Réseau
+  Plomb (entité Project, flow de demande libre marketplace ouverte, IA d'aide
+  au devis, vérification par les pairs, renommage du dépôt). Le dernier
+  commit date du 2026-03-02, mais un chantier est en cours et non commité sur
+  le pipeline CRM prospects (routers/services prospect, pages Coverage /
+  Dashboard / Plumbers de web-admin) : c'est la suite la plus concrète.
+revu-le: 2026-08-14
+stacks:
+- FastAPI + SQLModel + PostgreSQL + Alembic (apps/api)
+- React 19 + TypeScript + Tailwind v4 + React Query + Zustand (3 frontends)
+- pnpm workspaces + Turborepo
+- Stripe Connect, Google Maps/BAN, Brevo, S3/Cloudflare R2
+- Python (extractions-plombier : scraping SIRENE/Pages Jaunes/Google Maps)
+surfaces:
+- type: backend API
+  chemin: apps/api
+  url: ""
+- type: portail client
+  chemin: apps/web-client
+  url: ""
+- type: PWA plombier
+  chemin: apps/web-pro
+  url: ""
+- type: backoffice admin
+  chemin: apps/web-admin
+  url: ""
+- type: landing marketing (Oasis Shattaf)
+  chemin: web_src/
+  url: https://mroche14.github.io/shattaf/
+- type: pipeline CRM prospects (scraping)
+  chemin: extractions-plombier/
+  url: ""
+deploiement:
+  etat: demo
+  note: >-
+    .github/workflows/deploy.yml déploie web_src/ sur GitHub Pages à chaque
+    push sur main ; https://mroche14.github.io/shattaf/ répond 200 (testé
+    2026-08-14). Mais web_src/siteConfig.ts a whatsappE164 vide — le seul CTA
+    de contact de la landing n'est pas câblé, donc aucune commande réelle
+    n'est possible aujourd'hui malgré la page publiée. Les 4 apps du monorepo
+    (api, web-client, web-pro, web-admin) n'ont aucune configuration de
+    déploiement : infra/docker/ est vide.
+mise-en-prod:
+  cible: >-
+    docs/reseau-installateurs-shattaf.md décrit un lancement en 2 phases
+    opérationnelles : Phase 1 (30 à 60 premières interventions, plombiers
+    qualifiés uniquement) puis Phase 2 (ajout d'un tier jobber). Plan de
+    lancement commercial documenté, sans date calendaire fixée.
+suivi:
+  outil: plane
+  instance: https://plane.systemx.tech
+  espace: system-x
+  projet: SHTF
+secrets:
+  outil: aucun
+depot:
+  remote: https://github.com/mroche14/shattaf.git

@@ -1,0 +1,419 @@
+instance:
+  url: https://plane.systemx.tech
+  workspace: system-x
+  source: shattaf
+
+projet:
+  identifiant: SHTF
+  nom: Shattaf
+  description: >-
+    Réseau Plomb / Shattaf — plateforme mettant en réseau des plombiers
+    indépendants des DOM avec des clients particuliers et professionnels,
+    en commençant par la vente interne de douchettes hygiéniques.
+  creer_si_absent: true
+  intake: false
+
+labels:
+  - { nom: backend, couleur: "#3b82f6" }
+  - { nom: frontend, couleur: "#8b5cf6" }
+  - { nom: infra, couleur: "#0891b2" }
+  - { nom: sécurité, couleur: "#dc2626" }
+  - { nom: docs, couleur: "#65a30d" }
+  - { nom: crm, couleur: "#f59e0b" }
+  - { nom: action-humaine, couleur: "#ea580c" }
+  - { nom: bloquant, couleur: "#991b1b" }
+
+modules:
+  - cle: landing
+    nom: Landing Oasis Shattaf
+    description: Site marketing statique (GitHub Pages) pour la campagne douchettes hygiéniques.
+  - cle: backend
+    nom: Backend API
+    description: FastAPI + SQLModel + PostgreSQL, modèles et endpoints métier.
+  - cle: web-client
+    nom: Portail client
+    description: Application React du client final (particulier/pro).
+  - cle: web-pro
+    nom: PWA plombier
+    description: Application React du plombier (missions, devis, vérifications).
+  - cle: web-admin
+    nom: Backoffice admin
+    description: Dashboard, carte de couverture, pipeline prospects, gestion plombiers.
+  - cle: crm-prospects
+    nom: CRM prospects
+    description: Pipeline de qualification et scraping de plombiers prospects (SIRENE/Pages Jaunes/Google Maps).
+  - cle: infra
+    nom: Infrastructure et déploiement
+    description: CI/CD, environnement de dev, packages partagés.
+  - cle: marketplace-v2
+    nom: Marketplace ouverte (roadmap)
+    description: Évolutions décrites dans plan.md pour transformer Shattaf en Réseau Plomb.
+
+cycles:
+  - cle: landing-oasis
+    nom: Landing Oasis Shattaf (GitHub Pages)
+    debut: 2026-01-14
+    fin: 2026-01-15
+    description: >-
+      Landing page marketing publiée sur GitHub Pages pour la campagne
+      douchettes hygiéniques, avec optimisation images et responsive mobile.
+  - cle: scaffold-marketplace
+    nom: Scaffold plateforme marketplace
+    debut: 2026-02-28
+    fin: 2026-02-28
+    description: >-
+      Bascule du simple site vitrine vers le monorepo complet : backend
+      FastAPI, 3 frontends React, packages partagés — l'essentiel de la
+      plateforme posé en un seul commit massif.
+  - cle: reseau-plomb-sprints
+    nom: Réseau Plomb + CRM prospects (Sprints 0-9 squashés)
+    debut: 2026-03-01
+    fin: 2026-03-02
+    description: >-
+      Implémentation du pipeline CRM prospects et des sprints 0 à 9 du
+      backlog produit, squashés en deux commits denses.
+  - cle: ouvert
+    nom: En cours
+    debut: 2026-03-03
+    fin: 2026-12-31
+    description: >-
+      Suite du plan d'architecture (plan.md) : transformation de Shattaf en
+      plateforme Réseau Plomb multi-projets. Aucun commit depuis le
+      2026-03-02 ; un chantier CRM prospects est en cours sur le poste local,
+      non commité.
+
+items:
+  # --- cycle landing-oasis ---
+  - cle: landing-scaffold
+    titre: Scaffold initial du dépôt
+    description: >-
+      Dépôt initialisé (structure, .gitignore) avant l'ajout du code de la
+      landing page.
+    etat: Done
+    module: landing
+    cycle: landing-oasis
+    labels: [infra]
+
+  - cle: landing-app
+    titre: Landing page Oasis Shattaf construite
+    description: >-
+      Site marketing React/Vite/Tailwind pour la campagne douchettes
+      hygiéniques : Hero, Philosophy, ProductGrid, BusinessSection,
+      HygieneDuel — premier livrable visible du projet, sert de vitrine
+      avant l'ouverture de la marketplace complète.
+    etat: Done
+    module: landing
+    cycle: landing-oasis
+    labels: [frontend]
+
+  - cle: landing-deploy
+    titre: Pipeline CI/CD GitHub Pages
+    description: >-
+      Déploiement automatique de web_src/ sur GitHub Pages à chaque push sur
+      main, choisi pour publier la landing sans infrastructure dédiée.
+    etat: Done
+    module: landing
+    cycle: landing-oasis
+    labels: [infra]
+
+  - cle: landing-assets
+    titre: Correctifs de chemins d'assets et conversion WebP
+    description: >-
+      Chemins d'images corrigés pour le contexte GitHub Pages (sous-chemin) et
+      conversion des visuels produit en WebP pour réduire le poids de page.
+    etat: Done
+    module: landing
+    cycle: landing-oasis
+    labels: [frontend]
+
+  - cle: landing-mobile
+    titre: Passe de responsive mobile sur tous les composants
+    description: >-
+      Ajustement de l'ensemble des composants de la landing pour un rendu
+      correct sur mobile, canal d'acquisition principal visé pour la
+      campagne.
+    etat: Done
+    module: landing
+    cycle: landing-oasis
+    labels: [frontend]
+
+  # --- cycle scaffold-marketplace (commit unique, 285 fichiers) ---
+  - cle: marketplace-monorepo
+    titre: Bascule vers un monorepo pnpm/Turborepo
+    description: >-
+      Structure apps/ (api, web-client, web-pro, web-admin) + packages/
+      posée pour partager types et composants entre les 3 frontends et le
+      backend, plutôt que 4 dépôts séparés.
+    etat: Done
+    module: infra
+    cycle: scaffold-marketplace
+    labels: [infra]
+
+  - cle: marketplace-backend-models
+    titre: Modèles de données métier (SQLModel)
+    description: >-
+      Entités réseau et mission posées : User, PlumberProfile,
+      CustomerProfile, Booking, Quote, Order, Job, Invoice, Product,
+      PricingConfig, AuditLog — le socle relationnel de toute la
+      marketplace.
+    etat: Done
+    module: backend
+    cycle: scaffold-marketplace
+    labels: [backend]
+
+  - cle: marketplace-backend-routers
+    titre: Endpoints API v1
+    description: >-
+      Routers FastAPI pour auth, bookings, quotes, orders, invoices,
+      payments, products, users, missions, admin — surface HTTP complète du
+      backend sous /api/v1/.
+    etat: Done
+    module: backend
+    cycle: scaffold-marketplace
+    labels: [backend]
+
+  - cle: marketplace-matching
+    titre: Algorithme de matching géographique
+    description: >-
+      Scoring proximité/qualité/charge pour proposer les plombiers les plus
+      pertinents à une demande — cœur métier de la mise en relation.
+    etat: Done
+    module: backend
+    cycle: scaffold-marketplace
+    labels: [backend]
+
+  - cle: marketplace-auth
+    titre: Authentification JWT et rôles
+    description: >-
+      Auth par JWT avec 3 rôles (customer, plumber, admin), condition
+      préalable à toute route protégée de l'API.
+    etat: Done
+    module: backend
+    cycle: scaffold-marketplace
+    labels: [backend, sécurité]
+
+  - cle: marketplace-stripe
+    titre: Intégration Stripe Connect
+    description: >-
+      Paiement scindé (split payment) via Stripe Connect entre plateforme et
+      plombier, nécessaire pour tout flux de commande/mission payante.
+    etat: Done
+    module: backend
+    cycle: scaffold-marketplace
+    labels: [backend]
+
+  - cle: marketplace-web-client
+    titre: Portail client (web-client)
+    description: >-
+      Application React du client final pour parcourir les produits, réserver
+      une mission et suivre sa commande.
+    etat: Done
+    module: web-client
+    cycle: scaffold-marketplace
+    labels: [frontend]
+
+  - cle: marketplace-web-pro
+    titre: PWA plombier (web-pro)
+    description: >-
+      Application React installable en PWA pour que le plombier reçoive ses
+      missions, envoie des devis et exécute le suivi terrain.
+    etat: Done
+    module: web-pro
+    cycle: scaffold-marketplace
+    labels: [frontend]
+
+  - cle: marketplace-web-admin
+    titre: Backoffice admin (web-admin)
+    description: >-
+      Centre de commande du réseau : dashboard KPI, carte de couverture,
+      simulation de matching, gestion plombiers — outil interne pour piloter
+      l'activité.
+    etat: Done
+    module: web-admin
+    cycle: scaffold-marketplace
+    labels: [frontend]
+
+  - cle: marketplace-shared-packages
+    titre: Packages partagés (shared-types, ui-kit, api-client)
+    description: >-
+      Types TypeScript, composants UI et client API générés mutualisés entre
+      les 3 frontends pour éviter la divergence de contrats.
+    etat: Done
+    module: infra
+    cycle: scaffold-marketplace
+    labels: [frontend, infra]
+
+  - cle: marketplace-dev-tooling
+    titre: Scripts et environnement de développement local
+    description: >-
+      start-dev.sh/stop-dev.sh et docker-compose pour lancer l'ensemble des
+      services (API + 3 frontends + DB) en une commande.
+    etat: Done
+    module: infra
+    cycle: scaffold-marketplace
+    labels: [infra]
+
+  # --- cycle reseau-plomb-sprints ---
+  - cle: crm-prospect-model
+    titre: Modèle prospect intégré au cycle de vie plombier
+    description: >-
+      Les prospects sont modélisés comme des PlumberProfile au statut
+      'prospect' (lifecycle prospect → pending → active), pour réutiliser le
+      même modèle plutôt qu'en créer un séparé.
+    etat: Done
+    module: crm-prospects
+    cycle: reseau-plomb-sprints
+    labels: [backend, crm]
+
+  - cle: crm-prospect-analytics
+    titre: Analytics et géocodage des prospects
+    description: >-
+      Géocodage des adresses prospects et statistiques associées, nécessaires
+      pour positionner les prospects sur la carte de couverture.
+    etat: Done
+    module: crm-prospects
+    cycle: reseau-plomb-sprints
+    labels: [backend, crm]
+
+  - cle: crm-admin-ui
+    titre: Pipeline prospects côté admin
+    description: >-
+      Interface CRM dans web-admin : filtres par type/téléphone/email sur les
+      2000+ prospects identifiés, pour transformer la base scrapée en outil
+      de recrutement.
+    etat: Done
+    module: web-admin
+    cycle: reseau-plomb-sprints
+    labels: [frontend, crm]
+
+  - cle: crm-dead-zones
+    titre: Zones mortes sur la carte de couverture
+    description: >-
+      Détection et affichage des zones sans couverture plombier (sources
+      configurables : plombiers/prospects/combiné), pour cibler le
+      recrutement là où le réseau est faible.
+    etat: Done
+    module: web-admin
+    cycle: reseau-plomb-sprints
+    labels: [backend, frontend, crm]
+
+  - cle: crm-extraction-pipeline
+    titre: Pipeline d'extraction de plombiers DOM
+    description: >-
+      Scripts Python (extractions-plombier/) scrapant SIRENE, Pages Jaunes et
+      Google Maps, avec agrégation/déduplication : 2027 plombiers uniques
+      identifiés sur les 4 départements DOM, base de départ du recrutement.
+    etat: Done
+    module: crm-prospects
+    cycle: reseau-plomb-sprints
+    labels: [crm]
+
+  - cle: sprints-0-9-squash
+    titre: Sprints 0 à 9 du backlog produit (squashés)
+    description: >-
+      Lot massif (110 fichiers, ~6900 lignes) implémentant la suite du
+      backlog Réseau Plomb en une fois : missions, vérifications, entités
+      projet en germe — squashé donc peu granulaire, mais c'est le plus gros
+      livrable du dépôt après le scaffold initial.
+    etat: Done
+    module: backend
+    cycle: reseau-plomb-sprints
+    labels: [backend, frontend]
+
+  - cle: sprints-legal-specs
+    titre: Spécifications légales et commerciales Shattaf
+    description: >-
+      shattaf_marketplace_specs_v1_1/ : contrats prestataire, mandats de
+      facturation/encaissement, CGV, grille tarifaire/commissions, template
+      de facture — cadre juridique nécessaire avant toute vente réelle.
+    etat: Done
+    module: crm-prospects
+    cycle: reseau-plomb-sprints
+    labels: [docs]
+
+  - cle: sprints-docs-vision
+    titre: Documentation stratégique et sources
+    description: >-
+      docs/VISION.md, docs/reseau-installateurs-shattaf.md et
+      docs/sources-plombiers-dom.md posés pour fixer la vision produit et
+      tracer les sources de données utilisées par le CRM.
+    etat: Done
+    module: crm-prospects
+    cycle: reseau-plomb-sprints
+    labels: [docs]
+
+  - cle: gitignore-debug-screenshots
+    titre: Exclusion des captures de debug du suivi git
+    description: >-
+      .gitignore mis à jour pour ne pas versionner les screenshots de debug
+      générés à la racine pendant le développement.
+    etat: Done
+    module: infra
+    cycle: reseau-plomb-sprints
+    labels: [infra]
+
+  # --- reliquat plan.md -> items ouverts (cycle "ouvert") ---
+  - cle: roadmap-phase1-project-entity
+    titre: "Phase 1 — Entité Project"
+    description: >-
+      Introduire un modèle Project (name, slug, type, status, department) et
+      lier Product/Booking via project_id, pour que Shattaf devienne un
+      projet interne parmi d'autres plutôt que la seule offre de la
+      plateforme. Note : les fichiers models/project.py et routers/projects.py
+      existent déjà dans le code — plan.md peut décrire un état antérieur ou
+      partiel, à vérifier avant de traiter cet item comme un pur démarrage.
+    etat: Todo
+    priorite: high
+    module: marketplace-v2
+    cycle: ouvert
+    labels: [backend, action-humaine]
+
+  - cle: roadmap-phase2-demande-libre
+    titre: "Phase 2 — Flow de demande libre (marketplace ouverte)"
+    description: >-
+      Permettre à un client de poster une mission sans passer par un produit
+      catalogué (formulaire besoin + photos + urgence), condition pour
+      ouvrir la marketplace au-delà de la seule campagne Shattaf.
+    etat: Todo
+    priorite: high
+    module: marketplace-v2
+    cycle: ouvert
+    labels: [backend, frontend]
+
+  - cle: roadmap-phase3-ia-devis
+    titre: "Phase 3 — IA d'aide au devis"
+    description: >-
+      Service ai_devis.py + endpoint /quotes/ai-draft pour assister le
+      plombier dans la rédaction d'un devis structuré à partir de la
+      description du besoin, avant envoi au client.
+    etat: Todo
+    priorite: medium
+    module: marketplace-v2
+    cycle: ouvert
+    labels: [backend, frontend]
+
+  - cle: roadmap-phase4-peer-review
+    titre: "Phase 4 — Vérification par les pairs"
+    description: >-
+      Modèle Verification + matching en mode vérificateur (plombier tiers,
+      pas l'exécutant) avant libération du paiement — garde qualité pour la
+      marketplace ouverte. Note : models/verification.py et
+      routers/verifications.py existent déjà dans le code, à confronter au
+      texte de plan.md avant de démarrer.
+    etat: Todo
+    priorite: medium
+    module: marketplace-v2
+    cycle: ouvert
+    labels: [backend, frontend]
+
+  - cle: roadmap-phase5-renaming
+    titre: "Phase 5 — Renommage du dépôt en Réseau Plomb"
+    description: >-
+      Renommer shattaf → reseau-plomb (repo, titres/logos des 3 frontends,
+      configs), en gardant « Shattaf » uniquement pour le projet interne.
+      Indépendante des autres phases, faisable à tout moment.
+    etat: Todo
+    priorite: low
+    module: marketplace-v2
+    cycle: ouvert
+    labels: [docs]
