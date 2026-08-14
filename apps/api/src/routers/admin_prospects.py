@@ -21,6 +21,7 @@ from ..schemas.prospect import (
     GeocodeResult,
 )
 from ..services.prospect import ProspectService
+from ..utils.type_juridique import get_type_juridique
 from ..services.geocoding import GeocodingService
 from .. import database
 from ..database import get_session
@@ -38,7 +39,7 @@ router = APIRouter(prefix="/admin/prospects", tags=["admin-prospects"])
 async def list_prospects(
     departement: Optional[str] = Query(None),
     contact_status: Optional[ContactStatus] = Query(None),
-    individuel: Optional[bool] = Query(None),
+    type_juridique: Optional[str] = Query(None),
     has_telephone: Optional[bool] = Query(None),
     has_email: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
@@ -53,7 +54,7 @@ async def list_prospects(
     filters = ProspectFilters(
         departement=departement,
         contact_status=contact_status,
-        individuel=individuel,
+        type_juridique=type_juridique,
         has_telephone=has_telephone,
         has_email=has_email,
         search=search,
@@ -186,7 +187,7 @@ async def get_prospects_map(
                 name=name,
                 departement=p.departement,
                 contact_status=p.contact_status,
-                individuel=p.individuel,
+                type_juridique=get_type_juridique(p.forme_juridique),
                 telephone=p.telephone,
                 email=p.email,
                 ville=p.ville,

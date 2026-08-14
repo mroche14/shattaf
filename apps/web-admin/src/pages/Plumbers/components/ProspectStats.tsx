@@ -91,8 +91,8 @@ const ProspectStats: React.FC = () => {
               <UserCheck className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.individuels.toLocaleString()}</p>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Indépendants</p>
+              <p className="text-2xl font-bold">{stats.soloCount.toLocaleString()}</p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Solo (EI+SAS+EURL)</p>
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ const ProspectStats: React.FC = () => {
               <Building className="w-5 h-5 text-indigo-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.societes.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{stats.societeCount.toLocaleString()}</p>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Sociétés</p>
             </div>
           </div>

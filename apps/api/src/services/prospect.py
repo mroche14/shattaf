@@ -1,6 +1,7 @@
 """Prospect service for business logic."""
 
 import csv
+from collections import defaultdict
 from datetime import datetime
 from io import StringIO
 from typing import Optional, List, Tuple
@@ -18,6 +19,12 @@ from ..schemas.prospect import (
     ImportResult,
 )
 from ..utils.db import uuid_column_eq
+from ..utils.type_juridique import (
+    FORME_JURIDIQUE_MAP,
+    SOLO_TYPES,
+    TYPE_TO_CODES,
+    get_type_juridique,
+)
 
 
 class ProspectService:
@@ -46,8 +53,19 @@ class ProspectService:
         if filters.contact_status:
             query = query.where(PlumberProspect.contact_status == filters.contact_status)
 
-        if filters.individuel is not None:
-            query = query.where(PlumberProspect.individuel == filters.individuel)
+        if filters.type_juridique:
+            tj = filters.type_juridique
+            codes = TYPE_TO_CODES.get(tj)
+            if codes:
+                query = query.where(PlumberProspect.forme_juridique.in_(codes))
+            elif tj == "inconnu":
+                query = query.where(PlumberProspect.forme_juridique.is_(None))
+            elif tj == "autre":
+                known_codes = {c for c in FORME_JURIDIQUE_MAP}
+                query = query.where(
+                    PlumberProspect.forme_juridique.isnot(None),
+                    PlumberProspect.forme_juridique.notin_(known_codes),
+                )
 
         if filters.has_telephone:
             query = query.where(
@@ -137,24 +155,36 @@ class ProspectService:
         dept_result = await self.session.execute(dept_query)
         by_departement = {str(row[0]): row[1] for row in dept_result.all()}
 
-        # Individuels vs societes
-        indiv_result = await self.session.execute(
-            select(func.count(PlumberProspect.id)).where(
-                PlumberProspect.individuel == True
-            )
-        )
-        individuels = indiv_result.scalar() or 0
+        # By type_juridique (from forme_juridique codes)
+        fj_query = select(
+            PlumberProspect.forme_juridique,
+            func.count(PlumberProspect.id),
+        ).group_by(PlumberProspect.forme_juridique)
+        fj_result = await self.session.execute(fj_query)
 
-        societes_result = await self.session.execute(
-            select(func.count(PlumberProspect.id)).where(
-                PlumberProspect.individuel == False
-            )
-        )
-        societes = societes_result.scalar() or 0
+        by_type_juridique: dict[str, int] = defaultdict(int)
+        for code, count in fj_result.all():
+            tj = get_type_juridique(code)
+            by_type_juridique[tj] += count
 
-        # Cross-tabulation: type × contact availability
+        solo_count = sum(by_type_juridique.get(t, 0) for t in SOLO_TYPES)
+        societe_count = sum(
+            v for k, v in by_type_juridique.items()
+            if k not in SOLO_TYPES and k != "inconnu"
+        )
+
+        # Cross-tabulation: solo/societe/unknown × phone/email
+        solo_codes = TYPE_TO_CODES["solo"]
+        known_codes = set(FORME_JURIDIQUE_MAP.keys())
         has_phone = [PlumberProspect.telephone.isnot(None), PlumberProspect.telephone != ""]
         has_email_cond = [PlumberProspect.email.isnot(None), PlumberProspect.email != ""]
+
+        solo_cond = PlumberProspect.forme_juridique.in_(solo_codes)
+        societe_cond = [
+            PlumberProspect.forme_juridique.isnot(None),
+            PlumberProspect.forme_juridique.notin_(solo_codes),
+        ]
+        unknown_cond = PlumberProspect.forme_juridique.is_(None)
 
         async def _count(*conditions):
             r = await self.session.execute(
@@ -163,12 +193,12 @@ class ProspectService:
             return r.scalar() or 0
 
         breakdown = ProspectBreakdown(
-            individuels_with_phone=await _count(PlumberProspect.individuel == True, *has_phone),
-            individuels_with_email=await _count(PlumberProspect.individuel == True, *has_email_cond),
-            societes_with_phone=await _count(PlumberProspect.individuel == False, *has_phone),
-            societes_with_email=await _count(PlumberProspect.individuel == False, *has_email_cond),
-            unknown_with_phone=await _count(PlumberProspect.individuel.is_(None), *has_phone),
-            unknown_with_email=await _count(PlumberProspect.individuel.is_(None), *has_email_cond),
+            solo_with_phone=await _count(solo_cond, *has_phone),
+            solo_with_email=await _count(solo_cond, *has_email_cond),
+            societe_with_phone=await _count(*societe_cond, *has_phone),
+            societe_with_email=await _count(*societe_cond, *has_email_cond),
+            unknown_with_phone=await _count(unknown_cond, *has_phone),
+            unknown_with_email=await _count(unknown_cond, *has_email_cond),
         )
 
         return ProspectStats(
@@ -177,8 +207,9 @@ class ProspectService:
             with_email=with_email,
             by_status=by_status,
             by_departement=by_departement,
-            individuels=individuels,
-            societes=societes,
+            by_type_juridique=dict(by_type_juridique),
+            solo_count=solo_count,
+            societe_count=societe_count,
             breakdown=breakdown,
         )
 

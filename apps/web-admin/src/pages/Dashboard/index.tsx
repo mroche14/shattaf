@@ -141,12 +141,14 @@ const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               <MiniStatCard icon={<Phone className="w-4 h-4" />} label="Avec tél." value={prospectStats.withTelephone.toLocaleString()} sub={`${Math.round((prospectStats.withTelephone / prospectStats.total) * 100)}%`} color="emerald" />
               <MiniStatCard icon={<Mail className="w-4 h-4" />} label="Avec email" value={prospectStats.withEmail.toLocaleString()} sub={`${Math.round((prospectStats.withEmail / prospectStats.total) * 100)}%`} color="blue" />
-              <MiniStatCard icon={<UserCheck className="w-4 h-4" />} label="Indépendants" value={prospectStats.individuels.toLocaleString()} color="amber" />
-              <MiniStatCard icon={<Building className="w-4 h-4" />} label="Sociétés" value={prospectStats.societes.toLocaleString()} color="pink" />
-              <MiniActionCard icon={<Phone className="w-3.5 h-3.5" />} label="Indép. + tél." value={prospectStats.breakdown.individuelsWithPhone} total={prospectStats.total} color="from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=true&hasTelephone=true')} />
-              <MiniActionCard icon={<Mail className="w-3.5 h-3.5" />} label="Indép. + email" value={prospectStats.breakdown.individuelsWithEmail} total={prospectStats.total} color="from-blue-500/20 to-indigo-500/20 text-blue-400 border-blue-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=true&hasEmail=true')} />
-              <MiniActionCard icon={<Phone className="w-3.5 h-3.5" />} label="Soc. + tél." value={prospectStats.breakdown.societesWithPhone} total={prospectStats.total} color="from-pink-500/20 to-rose-500/20 text-pink-400 border-pink-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=false&hasTelephone=true')} />
-              <MiniActionCard icon={<Mail className="w-3.5 h-3.5" />} label="Soc. + email" value={prospectStats.breakdown.societesWithEmail} total={prospectStats.total} color="from-indigo-500/20 to-violet-500/20 text-indigo-400 border-indigo-500/30" onClick={() => navigate('/plumbers?tab=prospects&individuel=false&hasEmail=true')} />
+              <MiniStatCard icon={<UserCheck className="w-4 h-4" />} label="EI" value={(prospectStats.byTypeJuridique?.['EI'] ?? 0).toLocaleString()} sub="solo" color="amber" />
+              <MiniStatCard icon={<UserCheck className="w-4 h-4" />} label="SAS" value={(prospectStats.byTypeJuridique?.['SAS'] ?? 0).toLocaleString()} sub="solo" color="teal" />
+              <MiniActionCard icon={<Phone className="w-3.5 h-3.5" />} label="Solo + tél." value={prospectStats.breakdown.soloWithPhone} total={prospectStats.total} color="from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30" onClick={() => navigate('/plumbers?tab=prospects&typeJuridique=solo&hasTelephone=true')} />
+              <MiniActionCard icon={<Mail className="w-3.5 h-3.5" />} label="Solo + email" value={prospectStats.breakdown.soloWithEmail} total={prospectStats.total} color="from-blue-500/20 to-indigo-500/20 text-blue-400 border-blue-500/30" onClick={() => navigate('/plumbers?tab=prospects&typeJuridique=solo&hasEmail=true')} />
+              <MiniStatCard icon={<Building className="w-4 h-4" />} label="SARL" value={(prospectStats.byTypeJuridique?.['SARL'] ?? 0).toLocaleString()} color="pink" />
+              <MiniStatCard icon={<Building className="w-4 h-4" />} label="Sociétés" value={prospectStats.societeCount.toLocaleString()} color="indigo" />
+              <MiniActionCard icon={<Phone className="w-3.5 h-3.5" />} label="Soc. + tél." value={prospectStats.breakdown.societeWithPhone} total={prospectStats.total} color="from-pink-500/20 to-rose-500/20 text-pink-400 border-pink-500/30" onClick={() => navigate('/plumbers?tab=prospects&typeJuridique=SARL&hasTelephone=true')} />
+              <MiniActionCard icon={<Mail className="w-3.5 h-3.5" />} label="Soc. + email" value={prospectStats.breakdown.societeWithEmail} total={prospectStats.total} color="from-indigo-500/20 to-violet-500/20 text-indigo-400 border-indigo-500/30" onClick={() => navigate('/plumbers?tab=prospects&typeJuridique=SARL&hasEmail=true')} />
             </div>
           ) : (
             <div className="stat-card flex items-center justify-center h-32" style={{ color: 'var(--text-tertiary)' }}>
@@ -300,6 +302,7 @@ const MINI_COLORS: Record<string, { icon: string; bg: string }> = {
   green:   { icon: 'text-green-400',   bg: 'bg-green-500/10' },
   pink:    { icon: 'text-pink-400',    bg: 'bg-pink-500/10' },
   orange:  { icon: 'text-orange-400',  bg: 'bg-orange-500/10' },
+  teal:    { icon: 'text-teal-400',    bg: 'bg-teal-500/10' },
 };
 
 const MiniStatCard: React.FC<{
@@ -362,25 +365,26 @@ const TOOLTIP_STYLE = {
 const ProspectSection: React.FC<{ stats: ProspectStatsType }> = ({ stats }) => {
   const b = stats.breakdown;
 
-  // Breakdown chart: stacked bar (Indépendants / Sociétés / Inconnu) × (Tél / Email)
+  // Breakdown chart: stacked bar (Solo / Sociétés / Inconnu) × (Tél / Email)
+  const unknownCount = stats.byTypeJuridique?.['inconnu'] ?? 0;
   const breakdownData = [
     {
       category: 'Avec téléphone',
-      Indépendants: b.individuelsWithPhone,
-      Sociétés: b.societesWithPhone,
+      Solo: b.soloWithPhone,
+      Sociétés: b.societeWithPhone,
       Inconnu: b.unknownWithPhone,
     },
     {
       category: 'Avec email',
-      Indépendants: b.individuelsWithEmail,
-      Sociétés: b.societesWithEmail,
+      Solo: b.soloWithEmail,
+      Sociétés: b.societeWithEmail,
       Inconnu: b.unknownWithEmail,
     },
     {
       category: 'Total',
-      Indépendants: stats.individuels,
-      Sociétés: stats.societes,
-      Inconnu: stats.total - stats.individuels - stats.societes,
+      Solo: stats.soloCount,
+      Sociétés: stats.societeCount,
+      Inconnu: unknownCount,
     },
   ];
 
@@ -401,7 +405,7 @@ const ProspectSection: React.FC<{ stats: ProspectStatsType }> = ({ stats }) => {
                 <YAxis stroke="#94a3b8" />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
                 <Legend />
-                <Bar dataKey="Indépendants" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Solo" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="Sociétés" stackId="a" fill="#ec4899" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="Inconnu" stackId="a" fill="#6b7280" radius={[4, 4, 0, 0]} />
               </BarChart>

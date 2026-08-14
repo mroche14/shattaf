@@ -45,3 +45,11 @@ Thumbs.db
 # Misc
 # Screenshots / debug images in root
 /*.png
+.gitnexus
+
+# GitNexus code-intelligence index / generated docs (regenerate with `npx gitnexus analyze`)
+.claude/skills/gitnexus/
+AGENTS.md
+
+# Local Claude Code project settings
+.claude/settings.local.json

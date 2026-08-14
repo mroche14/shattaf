@@ -248,6 +248,7 @@ export const adminApi = {
       // Convert camelCase params to snake_case for API
       const paramMap: Record<string, string> = {
         contactStatus: 'contact_status',
+        typeJuridique: 'type_juridique',
         hasTelephone: 'has_telephone',
         hasEmail: 'has_email',
       };
@@ -538,6 +539,7 @@ interface Prospect {
   nbAvis?: number;
   statut?: string;
   individuel?: boolean;
+  typeJuridique: string;
   provenance?: string;
   sources?: string;
   contactStatus: ContactStatus;
@@ -551,7 +553,7 @@ interface Prospect {
 interface ProspectListParams {
   departement?: string;
   contactStatus?: ContactStatus;
-  individuel?: boolean;
+  typeJuridique?: string;
   hasTelephone?: boolean;
   hasEmail?: boolean;
   search?: string;
@@ -568,10 +570,10 @@ interface ProspectListResponse {
 }
 
 interface ProspectBreakdown {
-  individuelsWithPhone: number;
-  individuelsWithEmail: number;
-  societesWithPhone: number;
-  societesWithEmail: number;
+  soloWithPhone: number;
+  soloWithEmail: number;
+  societeWithPhone: number;
+  societeWithEmail: number;
   unknownWithPhone: number;
   unknownWithEmail: number;
 }
@@ -582,8 +584,9 @@ interface ProspectStats {
   withEmail: number;
   byStatus: Record<string, number>;
   byDepartement: Record<string, number>;
-  individuels: number;
-  societes: number;
+  byTypeJuridique: Record<string, number>;
+  soloCount: number;
+  societeCount: number;
   breakdown: ProspectBreakdown;
 }
 
@@ -606,7 +609,7 @@ interface ProspectMapItem {
   name: string;
   departement?: string;
   contactStatus: ContactStatus;
-  individuel?: boolean;
+  typeJuridique: string;
   telephone?: string;
   email?: string;
   ville?: string;

@@ -3,9 +3,10 @@
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 
 from ..models.prospect import ContactStatus
+from ..utils.type_juridique import get_type_juridique
 
 
 def to_camel(string: str) -> str:
@@ -60,6 +61,11 @@ class ProspectResponse(ProspectBase):
     longitude: Optional[float] = None
     geocoded_at: Optional[datetime] = None
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def type_juridique(self) -> str:
+        return get_type_juridique(self.forme_juridique)
+
     contact_status: ContactStatus
     contact_notes: Optional[str] = None
     last_contacted_at: Optional[datetime] = None
@@ -88,7 +94,7 @@ class ProspectFilters(BaseModel):
 
     departement: Optional[str] = None
     contact_status: Optional[ContactStatus] = None
-    individuel: Optional[bool] = None
+    type_juridique: Optional[str] = None
     has_telephone: Optional[bool] = None
     has_email: Optional[bool] = None
     search: Optional[str] = None
@@ -99,10 +105,10 @@ class ProspectFilters(BaseModel):
 class ProspectBreakdown(ProspectBase):
     """Cross-tabulation of type × contact info."""
 
-    individuels_with_phone: int = 0
-    individuels_with_email: int = 0
-    societes_with_phone: int = 0
-    societes_with_email: int = 0
+    solo_with_phone: int = 0
+    solo_with_email: int = 0
+    societe_with_phone: int = 0
+    societe_with_email: int = 0
     unknown_with_phone: int = 0
     unknown_with_email: int = 0
 
@@ -115,8 +121,9 @@ class ProspectStats(ProspectBase):
     with_email: int
     by_status: dict[str, int]
     by_departement: dict[str, int]
-    individuels: int
-    societes: int
+    by_type_juridique: dict[str, int] = {}
+    solo_count: int = 0
+    societe_count: int = 0
     breakdown: ProspectBreakdown = ProspectBreakdown()
 
 
@@ -148,7 +155,7 @@ class ProspectMapItem(ProspectBase):
     name: str
     departement: Optional[str] = None
     contact_status: ContactStatus
-    individuel: Optional[bool] = None
+    type_juridique: str = "inconnu"
     telephone: Optional[str] = None
     email: Optional[str] = None
     ville: Optional[str] = None

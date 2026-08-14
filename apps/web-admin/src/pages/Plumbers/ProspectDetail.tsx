@@ -197,9 +197,9 @@ const ProspectDetail: React.FC<ProspectDetailProps> = ({ prospect, onClose }) =>
                 </div>
               )}
               <div className="p-3 bg-[var(--bg-surface)] rounded-lg">
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Type</p>
-                <p className="text-sm">
-                  {prospect.individuel ? 'Indépendant' : 'Société'}
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Type juridique</p>
+                <p className="text-sm font-medium">
+                  {prospect.typeJuridique?.toUpperCase() ?? 'Inconnu'}
                 </p>
               </div>
               {prospect.noteAvis !== undefined && prospect.noteAvis !== null && (

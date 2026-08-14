@@ -298,7 +298,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({
             <p style="color: #6b7280; font-size: 0.9em; margin: 2px 0;">
               Statut: <span style="color: #f97316;">${STATUS_LABELS[prospect.contactStatus] || prospect.contactStatus}</span>
             </p>
-            <p style="color: #6b7280; font-size: 0.85em; margin: 2px 0;">${prospect.individuel ? 'Indépendant' : 'Société'}</p>
+            <p style="color: #6b7280; font-size: 0.85em; margin: 2px 0;">${prospect.typeJuridique?.toUpperCase() ?? 'Inconnu'}</p>
           </div>
         `);
         marker.addTo(markersRef.current!);
@@ -422,7 +422,7 @@ const CoveragePage: React.FC = () => {
   const [showProspects, setShowProspects] = useState(false);
 
   // Prospect filter states (default: indépendants with phone)
-  const [prospectType, setProspectType] = useState<string>('independant');
+  const [prospectType, setProspectType] = useState<string>('solo');
   const [prospectStatus, setProspectStatus] = useState<string>('all');
   const [prospectHasPhone, setProspectHasPhone] = useState(true);
   const [prospectHasEmail, setProspectHasEmail] = useState(false);
@@ -520,11 +520,13 @@ const CoveragePage: React.FC = () => {
     },
   });
 
+  const SOLO_TYPES = new Set(['EI', 'SAS', 'EURL']);
   const filteredProspects = useMemo(() => {
     if (!prospects) return undefined;
     return prospects.filter((p) => {
-      if (prospectType === 'independant' && p.individuel !== true) return false;
-      if (prospectType === 'societe' && p.individuel !== false) return false;
+      const tj = p.typeJuridique;
+      if (prospectType === 'solo' && !SOLO_TYPES.has(tj)) return false;
+      if (prospectType !== 'all' && prospectType !== 'solo' && tj !== prospectType) return false;
       if (prospectStatus !== 'all' && p.contactStatus !== prospectStatus) return false;
       if (prospectHasPhone && !p.telephone) return false;
       if (prospectHasEmail && !p.email) return false;
@@ -654,8 +656,12 @@ const CoveragePage: React.FC = () => {
               style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
             >
               <option value="all">Tous les types</option>
-              <option value="independant">Indépendants</option>
-              <option value="societe">Sociétés</option>
+              <option value="solo">Solo (EI+SAS+EURL)</option>
+              <option value="EI">EI</option>
+              <option value="SAS">SAS / SASU</option>
+              <option value="EURL">EURL</option>
+              <option value="SARL">SARL</option>
+              <option value="autre">Autre</option>
             </select>
             <select
               value={prospectStatus}
@@ -1123,8 +1129,12 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
                 className="flex-1 rounded-md px-2 py-1 text-[11px] border border-gray-200 bg-white text-gray-700 outline-none"
               >
                 <option value="all">Tous types</option>
-                <option value="independant">Indépendants</option>
-                <option value="societe">Sociétés</option>
+                <option value="solo">Solo</option>
+                <option value="EI">EI</option>
+                <option value="SAS">SAS</option>
+                <option value="EURL">EURL</option>
+                <option value="SARL">SARL</option>
+                <option value="autre">Autre</option>
               </select>
               <select
                 value={prospectStatus}
@@ -1293,7 +1303,7 @@ const SimulationPanel: React.FC<SimulationPanelProps> = ({
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
                         {np.prospect.ville && <span>{np.prospect.ville}</span>}
-                        <span>{np.prospect.individuel ? 'Indépendant' : 'Société'}</span>
+                        <span>{np.prospect.typeJuridique?.toUpperCase() ?? 'Inconnu'}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         {np.prospect.telephone && (

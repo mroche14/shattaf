@@ -33,6 +33,15 @@ const STATUS_CONFIG: Record<ContactStatus, { label: string; class: string }> = {
   registered: { label: 'Inscrit', class: 'bg-indigo-500/20 text-indigo-300' },
 };
 
+const TYPE_BADGE_CONFIG: Record<string, { label: string; badge: string; avatarBg: string }> = {
+  EI:      { label: 'EI',      badge: 'bg-amber-500/20 text-amber-300',   avatarBg: 'bg-gradient-to-br from-amber-600 to-amber-700' },
+  SAS:     { label: 'SAS',     badge: 'bg-teal-500/20 text-teal-300',     avatarBg: 'bg-gradient-to-br from-teal-600 to-teal-700' },
+  EURL:    { label: 'EURL',    badge: 'bg-orange-500/20 text-orange-300', avatarBg: 'bg-gradient-to-br from-orange-600 to-orange-700' },
+  SARL:    { label: 'SARL',    badge: 'bg-indigo-500/20 text-indigo-300', avatarBg: 'bg-gradient-to-br from-indigo-600 to-indigo-700' },
+  autre:   { label: 'Autre',   badge: 'bg-gray-500/20 text-gray-300',     avatarBg: 'bg-gradient-to-br from-slate-600 to-slate-700' },
+  inconnu: { label: 'Inconnu', badge: 'bg-gray-500/20 text-gray-400',     avatarBg: 'bg-gradient-to-br from-slate-600 to-slate-700' },
+};
+
 type ColumnKey = 'name' | 'siren' | 'department' | 'city' | 'phone' | 'email' | 'website' | 'type' | 'source' | 'status' | 'actions';
 
 const DEFAULT_COLUMNS: ColumnKey[] = ['name', 'department', 'city', 'phone', 'email', 'type', 'status', 'actions'];
@@ -57,11 +66,7 @@ const ProspectsList: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   // Read initial filter values from URL query params (e.g. from Dashboard segment cards)
-  const initialType = searchParams.get('individuel') === 'true'
-    ? 'individual' as const
-    : searchParams.get('individuel') === 'false'
-      ? 'company' as const
-      : 'all' as const;
+  const initialType = searchParams.get('typeJuridique') || 'all';
   const initialHasPhone = searchParams.get('hasTelephone') === 'true';
   const initialHasEmail = searchParams.get('hasEmail') === 'true';
 
@@ -69,7 +74,7 @@ const ProspectsList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'company'>(initialType);
+  const [typeFilter, setTypeFilter] = useState<string>(initialType);
   const [hasPhoneFilter, setHasPhoneFilter] = useState(initialHasPhone);
   const [hasEmailFilter, setHasEmailFilter] = useState(initialHasEmail);
   const [page, setPage] = useState(1);
@@ -89,8 +94,7 @@ const ProspectsList: React.FC = () => {
     ...(search && { search }),
     ...(departmentFilter && { departement: departmentFilter }),
     ...(statusFilter && { contactStatus: statusFilter }),
-    ...(typeFilter === 'individual' && { individuel: true }),
-    ...(typeFilter === 'company' && { individuel: false }),
+    ...(typeFilter !== 'all' && { typeJuridique: typeFilter }),
     ...(hasPhoneFilter && { hasTelephone: true }),
     ...(hasEmailFilter && { hasEmail: true }),
   };
@@ -233,15 +237,19 @@ const ProspectsList: React.FC = () => {
         <select
           value={typeFilter}
           onChange={(e) => {
-            setTypeFilter(e.target.value as 'all' | 'individual' | 'company');
+            setTypeFilter(e.target.value);
             setPage(1);
           }}
           className="rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 transition-colors"
           style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
         >
           <option value="all">Tous les types</option>
-          <option value="individual">Indépendants</option>
-          <option value="company">Sociétés</option>
+          <option value="solo">Solo (EI+SAS+EURL)</option>
+          <option value="EI">EI</option>
+          <option value="SAS">SAS / SASU</option>
+          <option value="EURL">EURL</option>
+          <option value="SARL">SARL</option>
+          <option value="autre">Autre</option>
         </select>
 
         <label className="flex items-center gap-2 rounded-xl px-4 py-2.5 cursor-pointer hover:border-indigo-500 transition-colors" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
@@ -405,8 +413,8 @@ const ProspectsList: React.FC = () => {
                     {visibleColumns.has('name') && (
                       <td>
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-sm font-bold">
-                            {prospect.individuel ? (
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ${TYPE_BADGE_CONFIG[prospect.typeJuridique]?.avatarBg ?? 'bg-gradient-to-br from-slate-600 to-slate-700'}`}>
+                            {['EI', 'SAS', 'EURL'].includes(prospect.typeJuridique) ? (
                               <User className="w-4 h-4" />
                             ) : (
                               <Building className="w-4 h-4" />
@@ -502,13 +510,9 @@ const ProspectsList: React.FC = () => {
                     {visibleColumns.has('type') && (
                       <td>
                         <span
-                          className={`badge ${
-                            prospect.individuel
-                              ? 'bg-amber-500/20 text-amber-300'
-                              : 'bg-indigo-500/20 text-indigo-300'
-                          }`}
+                          className={`badge ${TYPE_BADGE_CONFIG[prospect.typeJuridique]?.badge ?? 'bg-gray-500/20 text-gray-300'}`}
                         >
-                          {prospect.individuel ? 'Indép.' : 'Société'}
+                          {TYPE_BADGE_CONFIG[prospect.typeJuridique]?.label ?? prospect.typeJuridique}
                         </span>
                       </td>
                     )}
